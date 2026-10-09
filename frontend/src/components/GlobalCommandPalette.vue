@@ -174,6 +174,7 @@ import ResultGroup from './GlobalCommandPalette/ResultGroup.vue'
 import ResultItem from './GlobalCommandPalette/ResultItem.vue'
 import RetrievalSettings from '@/views/settings/RetrievalSettings.vue'
 import type { MessageSearchGroupItem } from '@/api/chat-history'
+import { isDemoAdministrator } from '@/config/demoNavigation'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -181,6 +182,9 @@ const router = useRouter()
 const commandPaletteStore = useCommandPaletteStore()
 const authStore = useAuthStore()
 const deploymentCapabilities = useDeploymentCapabilitiesStore()
+const isDemoAdmin = computed(() =>
+  isDemoAdministrator(authStore.isSystemAdmin, authStore.canAccessAllTenants),
+)
 const { open, initialQuery, recentQueries } = storeToRefs(commandPaletteStore)
 const { startChat } = useStartChat()
 
@@ -202,7 +206,7 @@ const {
   clearResults,
 } = useCmdkSearch({
   lockedKbIds: () => (activeKbScope.value ? [activeKbScope.value.id] : []),
-  agentsEnabled: () => deploymentCapabilities.isSupported('agents'),
+  agentsEnabled: () => isDemoAdmin.value && deploymentCapabilities.isSupported('agents'),
 })
 
 const drawerVisible = ref(false)
@@ -260,6 +264,9 @@ const allCommands = computed(() => {
     close: () => commandPaletteStore.closePalette(),
   })
   return cmds.filter((command) => {
+    if (!isDemoAdmin.value) {
+      return command.id === 'new-chat' || command.id === 'open-kb-list'
+    }
     if (command.id === 'open-agents') {
       return deploymentCapabilities.isSupported('agents')
     }

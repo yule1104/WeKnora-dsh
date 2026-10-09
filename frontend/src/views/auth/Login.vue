@@ -95,31 +95,14 @@
       </svg>
     </div>
 
-    <!-- Logo - Top Left -->
-    <a href="https://github.com/Tencent/WeKnora" target="_blank" class="header-logo" :title="$t('common.github')">
-      <img src="@/assets/img/weknora.png" alt="WeKnora" class="logo-image" />
-    </a>
+    <!-- Brand - Top Left -->
+    <div class="header-logo">
+      <img :src="BRAND_LOGO_URL" :alt="BRAND_SHORT_NAME" class="logo-image" />
+      <img :src="BRAND_INVERSE_LOGO_URL" :alt="BRAND_SHORT_NAME" class="logo-image logo-image--inverse" />
+    </div>
 
     <!-- Header Links - Top Right -->
     <div class="header-links">
-      <a href="https://weknora.weixin.qq.com" target="_blank" class="header-link" :title="$t('common.website')">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-          stroke-linecap="round">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="2" y1="12" x2="22" y2="12" />
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-        </svg>
-        <span class="link-text">{{ $t('common.website') }}</span>
-      </a>
-
-      <a href="https://github.com/Tencent/WeKnora" target="_blank" class="header-link" :title="$t('common.info')">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-          <path
-            d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-        </svg>
-        <span class="link-text">GitHub</span>
-      </a>
-
       <div class="language-switch">
         <button @click="toggleLanguageMenu" class="header-link" :title="currentLangOption?.label">
           <span class="lang-flag-icon">{{ currentLangOption?.flag }}</span>
@@ -145,36 +128,18 @@
     <!-- Left Showcase Section -->
     <div class="showcase-section">
       <div class="showcase-content">
-        <p class="showcase-subtitle">{{ $t('platform.subtitle') }}</p>
-        <p class="showcase-description">{{ $t('platform.description') }}</p>
-
-        <div class="feature-tags">
-          <span class="tag">{{ $t('platform.rag') }}</span>
-          <span class="tag">{{ $t('platform.agent') }}</span>
-          <span class="tag">{{ $t('platform.wiki') }}</span>
-          <span class="tag">{{ $t('platform.hybridSearch') }}</span>
-        </div>
-
-        <!-- Swiper Carousel -->
-        <div class="carousel-container">
-          <swiper :modules="modules" :slides-per-view="1" :loop="true" :autoplay="{
-            delay: 4000,
-            disableOnInteraction: false,
-          }" :effect="'fade'" :fade-effect="{ crossFade: true }"
-            :pagination="{ clickable: true, dynamicBullets: false }" :speed="800" class="screenshot-swiper">
-            <swiper-slide v-for="(slide, index) in slides" :key="index">
-              <div class="slide-content">
-                <img :src="slide.image" :alt="slide.title" class="slide-image" />
-              </div>
-            </swiper-slide>
-          </swiper>
-        </div>
+        <span class="showcase-image-note">AI 品牌概念影像 · 非真实客户</span>
       </div>
     </div>
 
     <!-- Right Form Section -->
     <div class="form-section">
       <div class="form-panel">
+        <div class="brand-intro">
+          <p class="brand-intro__eyebrow">YUNZHUANG · INTELLIGENT KNOWLEDGE</p>
+          <h1>细致照护，从这里开始。</h1>
+          <p>云妆 · 专属智能知识工作台</p>
+        </div>
         <!-- Login Card -->
         <div class="form-card" v-if="!isRegisterMode">
           <!-- invite_only 模式下共享链接停在登录卡，同样需要邀请上下文。 -->
@@ -346,11 +311,6 @@ import { MessagePlugin } from 'tdesign-vue-next'
 import { useRoleLabel } from '@/composables/useRoleLabel'
 import { notifyLoginSuccess } from '@/utils/loginNotify'
 import { newPasswordRules } from '@/utils/passwordPolicy'
-import { Swiper, SwiperSlide } from 'swiper/vue'
-import { Autoplay, EffectFade, Pagination } from 'swiper/modules'
-import 'swiper/css'
-import 'swiper/css/effect-fade'
-import 'swiper/css/pagination'
 import {
   login,
   register,
@@ -365,45 +325,13 @@ import {
 } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
-
-// Import screenshot images
-import screenshot1 from '@/assets/img/screenshot-1.svg'
-import screenshot2 from '@/assets/img/screenshot-2.svg'
-import screenshot3 from '@/assets/img/screenshot-3.svg'
-import screenshot4 from '@/assets/img/screenshot-4.svg'
+import { BRAND_LOGO_URL, BRAND_INVERSE_LOGO_URL, BRAND_SHORT_NAME } from '@/config/brand'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const { t, tm, locale } = useI18n()
 const { formatRole, roleIcon } = useRoleLabel()
-
-// Swiper modules
-const modules = [Autoplay, EffectFade, Pagination]
-
-// Carousel slides data
-const slides = [
-  {
-    image: screenshot4,
-    title: t('platform.carousel.agenticRagTitle'),
-    description: t('platform.carousel.agenticRagDesc')
-  },
-  {
-    image: screenshot2,
-    title: t('platform.carousel.hybridSearchTitle'),
-    description: t('platform.carousel.hybridSearchDesc')
-  },
-  {
-    image: screenshot3,
-    title: t('platform.carousel.wikiTitle'),
-    description: t('platform.carousel.wikiDesc')
-  },
-  {
-    image: screenshot1,
-    title: t('platform.carousel.smartDocRetrievalTitle'),
-    description: t('platform.carousel.smartDocRetrievalDesc')
-  }
-]
 
 // Form references
 const formRef = ref()
@@ -838,7 +766,7 @@ onMounted(async () => {
   min-height: 100%;
   overflow: hidden;
   position: relative;
-  background: linear-gradient(225deg, #022c22 0%, #064e3b 15%, #065f46 25%, #047857 38%, #059669 50%, #07C05F 65%, #10B981 78%, #34D399 90%, #6EE7B7 100%);
+  background: linear-gradient(225deg, #172554 0%, #312e81 22%, #4338ca 45%, #5b5ceb 68%, #7c3aed 84%, #a78bfa 100%);
 
   &::before {
     content: '';
@@ -1066,7 +994,7 @@ onMounted(async () => {
 .showcase-section {
   flex: 0 0 52%;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   padding: 100px 30px 100px 50px;
   box-sizing: border-box;
   position: relative;
@@ -1079,7 +1007,7 @@ onMounted(async () => {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  margin-bottom: 60px;
+  margin-bottom: 0;
 }
 
 .showcase-subtitle {
@@ -1103,7 +1031,7 @@ onMounted(async () => {
 .feature-tags {
   display: flex;
   gap: 12px;
-  margin-bottom: 40px;
+  margin-bottom: 0;
   flex-wrap: wrap;
 }
 
@@ -1116,62 +1044,6 @@ onMounted(async () => {
   font-size: var(--app-text-base);
   font-weight: 500;
   font-family: var(--app-font-family);
-}
-
-/* Carousel */
-.carousel-container {
-  width: 100%;
-  margin-top: 48px;
-}
-
-.screenshot-swiper {
-  width: 100%;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  padding-bottom: 40px;
-
-  :deep(.swiper-wrapper) {
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  :deep(.swiper-pagination) {
-    bottom: 15px !important;
-    z-index: 10;
-  }
-
-  :deep(.swiper-pagination-bullet) {
-    width: 10px;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.5);
-    opacity: 1;
-    transition: all var(--app-motion-slow) ease;
-    margin: 0 6px !important;
-  }
-
-  :deep(.swiper-pagination-bullet-active) {
-    background: var(--td-bg-color-container);
-    width: 28px;
-    border-radius: 5px;
-  }
-}
-
-.slide-content {
-  width: 100%;
-  height: 100%;
-  background: var(--td-bg-color-container);
-  border-radius: 16px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.slide-image {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: contain;
 }
 
 /* Right Form Section */
@@ -1198,7 +1070,15 @@ onMounted(async () => {
   top: 32px;
   left: 50px;
   z-index: 100;
-  cursor: pointer;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 24px rgba(30, 27, 75, 0.14);
+  backdrop-filter: blur(10px);
 
   .logo-image {
     width: 120px;
@@ -1688,7 +1568,7 @@ onMounted(async () => {
 
   .showcase-section {
     flex: 0 0 auto;
-    min-height: 50vh;
+    min-height: 32vh;
     padding: 40px 24px;
   }
 
@@ -1711,11 +1591,7 @@ onMounted(async () => {
   }
 
   .feature-tags {
-    margin-bottom: 24px;
-  }
-
-  .carousel-container {
-    margin-top: 24px;
+    margin-bottom: 0;
   }
 
   .form-section {
@@ -1811,12 +1687,200 @@ onMounted(async () => {
     display: none;
   }
 }
+
+/* 云妆 V2 员工入口：保留所有表单与登录流程，只重排视觉层。 */
+.login-layout {
+  min-height: 100vh;
+  background: #fff;
+  font-family: "YZ Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  &::before { display: none; }
+}
+
+.animated-bg { display: none; }
+
+.form-section {
+  order: 1;
+  flex: 0 0 50%;
+  align-items: center;
+  justify-content: center;
+  padding: 150px 48px 70px;
+  background: #fff;
+}
+
+.form-panel {
+  max-width: 440px;
+  margin: 0;
+}
+
+.brand-intro {
+  margin-bottom: 30px;
+  color: #29272c;
+
+  &__eyebrow {
+    margin: 0 0 16px;
+    color: #78485e;
+    font-size: 11px;
+    letter-spacing: .18em;
+    font-weight: 600;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font: 400 clamp(27px, 2.6vw, 38px)/1.45 "YZ Serif", "Noto Serif SC", serif;
+    letter-spacing: .04em;
+  }
+
+  > p:last-child {
+    margin: 0;
+    color: #68616a;
+    font-size: 14px;
+  }
+}
+
+.showcase-section {
+  order: 2;
+  flex: 0 0 50%;
+  min-height: 100vh;
+  padding: 0;
+  background: #d8c8d0 url('@/assets/brand/portrait.png') center center / cover no-repeat;
+}
+
+.showcase-content {
+  max-width: none;
+  height: 100%;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 24px;
+}
+
+.showcase-image-note {
+  padding: 5px 9px;
+  border-radius: 4px;
+  color: #fff;
+  background: rgba(41, 39, 44, .65);
+  font-size: 11px;
+  letter-spacing: .02em;
+}
+
+.header-logo {
+  position: absolute;
+  top: 44px;
+  left: max(48px, calc((50vw - 440px) / 2));
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+
+  .logo-image { width: 194px; }
+  .logo-image--inverse { display: none; }
+}
+
+.header-links {
+  position: absolute;
+  top: 26px;
+  right: 26px;
+}
+
+.header-link {
+  border-radius: 8px;
+  background: rgba(41, 39, 44, .45);
+  border-color: rgba(255, 255, 255, .45);
+
+  &:hover { background: rgba(41, 39, 44, .7); }
+}
+
+.form-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.form-header {
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.form-title {
+  color: #29272c;
+  font-size: 21px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.form-welcome, .form-subtitle { color: #68616a; }
+
+.form-hint,
+.login-features .feature-icon {
+  background: #f4ecf0;
+  color: #643347;
+}
+
+.form-content :deep(.t-input) {
+  border-color: #958d98;
+  border-radius: 8px;
+
+  &:focus-within {
+    border-color: #78485e;
+    box-shadow: 0 0 0 3px rgba(120, 72, 94, .14);
+  }
+}
+
+.submit-button,
+.register-cta__button,
+.oidc-button { border-radius: 8px; }
+
+.register-cta__button:hover { background: #f4ecf0; }
+
+.login-features {
+  padding-top: 18px;
+  border-top: 1px solid #e3dfe5;
+}
+
+@media (max-width: 1024px) {
+  .form-section { padding-left: 36px; padding-right: 36px; }
+  .header-logo { left: 36px; top: 36px; }
+  .header-logo .logo-image { width: 170px; }
+}
+
+@media (max-width: 768px) {
+  .login-layout { flex-direction: column; }
+  .showcase-section {
+    order: 1;
+    flex: none;
+    min-height: 270px;
+    background-position: center 38%;
+  }
+  .form-section {
+    order: 2;
+    flex: none;
+    padding: 112px 28px 48px;
+  }
+  .header-logo { top: 294px; left: 28px; }
+  .header-logo .logo-image { width: 164px; }
+  .header-links { top: 16px; right: 16px; }
+  .form-panel { max-width: 480px; }
+}
+
+@media (max-width: 480px) {
+  .showcase-section { min-height: 220px; }
+  .showcase-content { padding: 12px; }
+  .form-section { padding: 108px 24px 40px; }
+  .header-logo { top: 240px; left: 24px; }
+  .header-logo .logo-image { width: 152px; }
+  .brand-intro { margin-bottom: 24px; }
+  .form-card { padding: 0; }
+}
 </style>
 
 <style lang="less">
 html[theme-mode="dark"] {
   .login-layout {
-    background: linear-gradient(225deg, #011a14 0%, #032e22 15%, #043a2c 25%, #05503d 38%, #046647 50%, #038a56 65%, #049b60 78%, #06a06a 90%, #07b074 100%);
+    background: #211d22;
   }
 
   .knowledge-node {
@@ -1830,8 +1894,11 @@ html[theme-mode="dark"] {
   }
 
   .header-logo .logo-image {
-    filter: invert(1) hue-rotate(180deg) brightness(1.1);
+    filter: none;
   }
+
+  .header-logo .logo-image:not(.logo-image--inverse) { display: none; }
+  .header-logo .logo-image--inverse { display: block; }
 
   .header-link {
     background: rgba(255, 255, 255, 0.12);
@@ -1862,8 +1929,8 @@ html[theme-mode="dark"] {
   }
 
   .form-card {
-    background: rgba(36, 36, 36, 0.97) !important;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .register-cta__divider span {
@@ -1883,12 +1950,15 @@ html[theme-mode="dark"] {
     }
   }
 
-  .screenshot-swiper .swiper-pagination-bullet-active {
-    background: rgba(255, 255, 255, 0.9) !important;
+  .login-features .feature-icon {
+    background: #382733;
   }
 
-  .login-features .feature-icon {
-    background: rgba(6, 176, 77, 0.15);
-  }
+  .form-section { background: #211d22; }
+  .brand-intro, .form-title { color: #f7f7f8; }
+  .brand-intro > p:last-child { color: #c9c1ca; }
+  .brand-intro__eyebrow { color: #ddb9c7; }
+  .form-hint { background: #382733; color: #ddb9c7; }
+  .login-features { border-color: #453e46; }
 }
 </style>

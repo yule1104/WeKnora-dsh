@@ -3,7 +3,8 @@
         <!-- 展开时：Logo + 搜索/折叠按钮同行 -->
         <div class="logo_row" v-if="!uiStore.sidebarCollapsed">
             <div class="logo_box" @click="router.push('/platform/knowledge-bases')" style="cursor: pointer;">
-                <img class="logo" src="@/assets/img/weknora.png" alt="">
+                <img class="logo" :src="BRAND_LOGO_URL" :alt="BRAND_SHORT_NAME">
+                <img class="logo logo--inverse" :src="BRAND_INVERSE_LOGO_URL" :alt="BRAND_SHORT_NAME">
                 <sup v-if="isLiteEdition" class="lite-badge">Lite</sup>
             </div>
             <div class="logo_actions">
@@ -278,6 +279,7 @@ import UserMenu from '@/components/UserMenu.vue';
 import TenantSelector from '@/components/TenantSelector.vue';
 import { useI18n } from 'vue-i18n';
 import { useEditorResourcesStore } from '@/stores/editorResources';
+import { BRAND_LOGO_URL, BRAND_INVERSE_LOGO_URL, BRAND_SHORT_NAME } from '@/config/brand';
 
 const chatResources = useChatResourcesStore();
 const editorResources = useEditorResourcesStore();
@@ -1353,9 +1355,11 @@ const resizeSidebar = (delta: number, keyboard: boolean) => {
         overflow: hidden;
 
         .logo {
-            width: 128px;
+            width: 154px;
             height: auto;
         }
+
+        .logo--inverse { display: none; }
 
         .lite-badge {
             margin-left: 2px;
@@ -1439,7 +1443,7 @@ const resizeSidebar = (delta: number, keyboard: boolean) => {
     }
 
     .menu_item_active {
-        border-radius: var(--app-radius-xs);
+        border-radius: 8px;
         background: var(--td-bg-color-secondarycontainer) !important;
 
         .menu_icon,
@@ -1465,7 +1469,7 @@ const resizeSidebar = (delta: number, keyboard: boolean) => {
         padding: 6px 10px 6px var(--sidebar-inset-x);
         box-sizing: border-box;
         margin-bottom: 1px;
-        border-radius: var(--app-radius-xs);
+        border-radius: 8px;
         transition: background-color var(--app-motion-base) ease;
 
         .menu_item-box {
@@ -1947,9 +1951,12 @@ const resizeSidebar = (delta: number, keyboard: boolean) => {
 }
 </style>
 <style lang="less">
-// Dark mode: invert dark logo to light
-html[theme-mode="dark"] .aside_box .logo_box .logo {
-    filter: invert(1) hue-rotate(180deg);
+// Dark mode uses the supplied inverse logo rather than altering its brand colors.
+html[theme-mode="dark"] .aside_box .logo_box .logo:not(.logo--inverse) {
+    display: none;
+}
+html[theme-mode="dark"] .aside_box .logo_box .logo--inverse {
+    display: block;
 }
 
 // Dark mode: 滚动条在深色背景下需要更亮的颜色才看得见
@@ -1991,10 +1998,15 @@ html[theme-mode="dark"] .aside_box .menu_item_c_active .menu_icon img.icon {
     opacity: 0.9;
 }
 
-// Active (green) icons should not be inverted
+// Recolor legacy active icon assets to the 云妆 accent without changing navigation.
 html[theme-mode="dark"] .aside_box .menu_item_active .menu_icon img.icon {
-    filter: none;
+    filter: brightness(0) saturate(100%) invert(80%) sepia(12%) saturate(710%) hue-rotate(292deg) brightness(92%) contrast(91%);
     opacity: 1;
+}
+
+html[theme-mode="light"] .aside_box .menu_item_active .menu_icon img.icon,
+html[theme-mode="light"] .aside_box .menu_item_c_active .menu_icon img.icon {
+    filter: brightness(0) saturate(100%) invert(24%) sepia(20%) saturate(1356%) hue-rotate(287deg) brightness(94%) contrast(91%);
 }
 
 // 下拉菜单样式已统一至 @/assets/dropdown-menu.less

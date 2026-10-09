@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>盘古星火｜AI 平台融合路线评估</title>
+<style>
+:root{--ink:#18304b;--muted:#63768b;--line:#dfE8f1;--blue:#2563eb;--green:#13836a}*{box-sizing:border-box}body{margin:0;background:#f3f7fc;color:var(--ink);font:15px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}.page{max-width:1060px;margin:28px auto;padding:0 22px}header{padding:30px 34px;background:linear-gradient(120deg,#e9f6ff,#fff,#eef0ff);border:1px solid var(--line);border-radius:20px}.eyebrow{font-size:12px;letter-spacing:.1em;color:var(--blue);font-weight:700}h1{font-size:30px;line-height:1.3;margin:9px 0}header p{margin:0;color:var(--muted)}.recommend{margin-top:18px;background:#eaf7f1;border:1px solid #c2e5d7;border-radius:14px;padding:18px 22px}.recommend strong{color:var(--green);font-size:18px}.recommend p{margin:5px 0 0}.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}.card,section{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px}.card h2{font-size:18px;margin:0 0 8px}.card p{margin:0;color:var(--muted);font-size:14px}.label{font-size:11px;color:var(--blue);font-weight:700;margin-bottom:5px}section{margin:18px 0}section h2{font-size:20px;margin:0 0 14px}.table{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px;min-width:690px}th,td{text-align:left;vertical-align:top;padding:12px 13px;border-bottom:1px solid #e6edf5}th{background:#eef5ff}th:first-child{width:18%}th:nth-child(2),th:nth-child(3){width:41%}tr:last-child td{border-bottom:0}.a{color:var(--green);font-weight:700}.b{color:#94621b;font-weight:700}.note{font-size:12px;color:var(--muted);margin:12px 0 0}.decision{display:grid;grid-template-columns:1fr 1fr;gap:16px}.decision div{padding:16px;background:#f5f9fd;border-radius:12px}.decision strong{display:block;margin-bottom:5px}.decision p{margin:0;font-size:14px}.boundary{padding:14px 18px;background:#edf5ff;border-radius:12px;font-size:14px}.boundary p{margin:5px 0}footer{font-size:12px;color:var(--muted);text-align:center;padding:6px 0 24px}.print{float:right;background:#fff;border:1px solid #c5d6e9;color:#345a7c;border-radius:8px;padding:7px 12px;cursor:pointer}@media(max-width:750px){.pair,.decision{grid-template-columns:1fr}.page{padding:0 12px}header{padding:24px}h1{font-size:25px}.print{float:none;margin-bottom:10px}}@media print{body{background:#fff}.page{max-width:none;margin:0;padding:0}.print{display:none}section,.card,.recommend{break-inside:avoid}header{padding:20px}table{min-width:0;font-size:12px}th,td{padding:8px}}
+</style>
+</head>
+<body><main class="page">
+<header><button class="print" onclick="window.print()">打印 / 导出 PDF</button><div class="eyebrow">架构选型 · 管理层概要</div><h1>盘古星火：AI 平台融合路线评估</h1><p>比较“以 WeKnora 为底座”与“以星火为底座”，支持周期、投入与长期维护决策。｜2026-10-09</p></header>
+<div class="recommend"><strong>建议：长期统一 AI 平台优先采用 WeKnora 底座</strong><p>复用知识库、Agent 与会话能力，星火继续承担项目、需求、本体和部署业务。若近期目标仅是在现有星火中增加知识检索，星火底座更适合快速交付。</p></div>
+<div class="pair">
+<article class="card"><div class="label">路线 A · 推荐用于统一平台</div><h2>WeKnora 底座 + 星火领域服务</h2><p>用户、租户、知识库、Agent、会话由 WeKnora 统一；星火页面迁入 Vue，FastAPI 和业务数据库继续复用。</p></article>
+<article class="card"><div class="label">路线 B · 适合业务平台优先</div><h2>星火底座 + WeKnora 知识服务</h2><p>保留 React 项目工作台、现有 Agent 与会话；通过 API/MCP 使用 WeKnora 文档解析、检索和 RAG。</p></article>
+</div>
+<section><h2>核心维度比较</h2><div class="table"><table><thead><tr><th>维度</th><th>路线 A：WeKnora 底座</th><th>路线 B：星火底座</th></tr></thead><tbody>
+<tr><td>能力复用</td><td>知识、Agent、会话能力复用充分；星火后端继续使用。</td><td>星火业务页面复用充分；知识能力通过服务接口接入。</td></tr>
+<tr><td>前期难度</td><td><span class="b">中高</span>：React → Vue 页面重写；项目与租户权限映射。</td><td><span class="a">低至中</span>：少量检索 API 接入快；完整知识管理体验工作量上升。</td></tr>
+<tr><td>Agent / 会话</td><td>原生对话、引用、工具展示可复用；需求/本体 Agent 通过模板与 MCP 接入。</td><td>保留星火现有 Executor/会话；所需引用、附件、恢复等能力需逐项评估补齐。</td></tr>
+<tr><td>租户与权限</td><td>以 WeKnora 身份为主，星火业务权限仍需二次校验。</td><td>以星火身份为主，需要映射 WeKnora 租户、知识库与文档访问范围。</td></tr>
+<tr><td>业务连续性</td><td>页面切换需培训与灰度；原星火后端和数据保留。</td><td>现有界面与流程变化较小，早期切换风险较低。</td></tr>
+<tr><td>升级维护</td><td>定制 Vue 页面需合并上游；Gateway MCP 可减少 Go 核心修改。</td><td>星火自主升级；WeKnora 独立升级后需验证 API/MCP 契约。</td></tr>
+<tr><td>后续演进</td><td><span class="a">中等</span>：引入更多知识、MCP、Skill 和 Agent 能力较自然。</td><td><span class="b">取决于范围</span>：只做知识检索较可控；追求完整 AI 平台时补建成本高。</td></tr>
+<tr><td>运维与成本</td><td>两套后端持续运维；前期页面迁移投入较高，平台能力重复建设较少。</td><td>同样保留两套后端；前期投入较低，长期成本取决于补齐能力和接口依赖面。</td></tr>
+</tbody></table></div></section>
+<section><h2>周期估算：按交付范围比较</h2><div class="table"><table><thead><tr><th>交付目标</th><th>路线 A</th><th>路线 B</th></tr></thead><tbody>
+<tr><td>可演示版本</td><td>5–7 周：只读项目工作台 + 知识/Agent 演示</td><td>4–6 周：现有星火 + 知识检索/问答</td></tr>
+<tr><td>统一平台 MVP</td><td>9–12 周：项目、需求、本体候选与统一会话核心闭环</td><td>12–16 周：保留星火入口，补齐知识管理、引用和权限等核心能力</td></tr>
+<tr><td>生产可用版本</td><td>14–18 周：回归、权限、审计、灰度与运维</td><td>18–24 周：以达到上述相近平台能力为前提</td></tr>
+</tbody></table></div><p class="note">以上为前期规划区间，并非承诺排期：假设 2 名前端、2 名后端、1 名 AI 工程师，测试/运维参与；工作可部分并行。需先完成代码与 API 盘点再确认。路线 B 若只做检索与问答，无需按完整平台周期投入；DSH Gateway 相关工作为两条路线共有成本。</p></section>
+<section><h2>选择依据与落地建议</h2><div class="decision"><div><strong>选择 A：建设长期统一 AI 平台</strong><p>适用于统一 Agent/会话、多租户知识服务，以及持续引入知识图谱、MCP、Skill 的目标。接受星火页面迁移投入。</p></div><div><strong>选择 B：优先保留现有业务体验</strong><p>适用于近期围绕项目、本体和需求交付，知识功能以 API 服务为主。先限定范围，避免后续不断追加平台能力。</p></div></div><div class="boundary" style="margin-top:16px"><p><strong>推荐职责分工：</strong>WeKnora 负责产品入口与 AI 通用能力；星火负责业务事实与规则；DSH Gateway 负责复杂任务执行。</p><p><strong>先落地：</strong>升级演练 → 项目绑定与只读工作台 → Gateway MCP → 需求 Agent → 本体 Agent → 编码与部署。</p></div><p class="note">正式立项前用 1–2 周验证身份/权限、项目 API、Agent 工具链和页面迁移工作量，再收敛资源与排期。采用 WeKnora 底座后，生产升级仍需定制镜像、回归和灰度。</p></section>
+<footer>评估依据：现有代码调研与融合方案｜规划评估，尚未实施｜PG-AI-Foundation</footer>
+</main></body></html>

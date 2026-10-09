@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>PG-AI-Foundation｜总架构与实施方案 V2.0</title>
+  <style>
+    :root{--bg:#f4f8ff;--paper:#fff;--ink:#15243a;--muted:#66768d;--line:#dbe7f4;--blue:#2878ff;--cyan:#18b8cf;--green:#19a974;--orange:#f39a3f;--violet:#7957d5;--red:#e35d6a;--shadow:0 18px 46px rgba(35,74,120,.09)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7;background:radial-gradient(circle at 6% 0,rgba(24,184,207,.13),transparent 24%),radial-gradient(circle at 94% 4%,rgba(121,87,213,.12),transparent 25%),var(--bg)}
+    .wrap{width:min(1240px,calc(100% - 32px));margin:auto}.hero{position:relative;overflow:hidden;margin:24px 0 18px;padding:42px;border:1px solid var(--line);border-radius:28px;background:linear-gradient(135deg,#fff 0,#eef9ff 55%,#f6f1ff 100%);box-shadow:var(--shadow)}.hero:after{content:"";position:absolute;width:330px;height:330px;border-radius:50%;border:54px solid rgba(40,120,255,.055);right:-130px;top:-175px}.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.14em}.hero h1{font-size:38px;line-height:1.18;margin:10px 0 12px;max-width:900px}.hero p{margin:0;max-width:880px;color:var(--muted)}.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:12px}.print{position:absolute;right:30px;bottom:30px;z-index:2;border:1px solid #bdd5ee;background:#fff;color:#315675;border-radius:10px;padding:8px 12px;cursor:pointer}
+    nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}nav a,.doclinks a{color:#315d7b;text-decoration:none;background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 11px;font-size:12px}.section,.card{background:rgba(255,255,255,.97);border:1px solid var(--line);box-shadow:var(--shadow)}.section{border-radius:20px;margin:18px 0;padding:30px}.section h2{margin:0;font-size:24px}.lead{color:var(--muted);font-size:13px;margin:4px 0 20px}.title{display:flex;gap:12px;align-items:center}.title b{width:36px;height:36px;display:grid;place-items:center;color:#fff;border-radius:11px;background:linear-gradient(135deg,var(--blue),var(--cyan));font-size:12px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.card{border-radius:16px;padding:20px}.card small{font-weight:800;color:var(--blue)}.card h3{margin:6px 0 8px;font-size:17px}.card p{margin:0;color:var(--muted);font-size:13px}.good{color:var(--green)}.future{color:var(--violet)}.warn{color:#a65f13}.note{margin-top:15px;padding:13px 15px;border-left:4px solid var(--cyan);background:#eefafd;border-radius:8px;color:#34596e;font-size:13px}.note.orange{border-left-color:var(--orange);background:#fff6eb}
+    .diagram{overflow:auto;border:1px solid var(--line);border-radius:17px;background:linear-gradient(180deg,#fbfdff,#f3f8fd);padding:14px}.diagram svg{display:block;width:100%;min-width:1060px}.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}.phase{position:relative;padding:17px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#fff,#f7fbff)}.phase b{font-size:12px;color:var(--blue)}.phase strong{display:block;margin:5px 0;font-size:14px}.phase span{font-size:12px;color:var(--muted)}.phase.optional{border-style:dashed;background:#faf8ff}.phase.optional b{color:var(--violet)}
+    .table{overflow:auto;border:1px solid var(--line);border-radius:13px}table{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}th,td{text-align:left;vertical-align:top;padding:12px;border-bottom:1px solid #e7eef6}th{background:#eff6fd;color:#294d68}tr:last-child td{border-bottom:0}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#edf4fb;color:#2f5d84;padding:2px 5px;border-radius:5px}.doclinks{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.footer{text-align:center;color:#8796a7;font-size:12px;padding:8px 0 34px}
+    @media(max-width:900px){.grid,.grid2,.timeline{grid-template-columns:1fr}.hero{padding:28px}.hero h1{font-size:29px}.print{position:static;margin-top:18px}.section{padding:21px}}
+    @media print{body{background:#fff}.wrap{width:100%}.hero,.section,.card{box-shadow:none}.print,nav{display:none}.section{break-inside:avoid}}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">MASTER IMPLEMENTATION PLAN · V2.0</div>
+    <h1>PG-AI-Foundation × DeepSeek Harness<br/>总架构与实施方案</h1>
+    <p>把 DSH 运行时接入与星火业务迁移收敛为一个总计划。第一阶段采用独立 Gateway MCP，保持 WeKnora Go Agent 主链路稳定；未来按明确条件增加 Runtime Adapter。</p>
+    <div class="chips"><span class="chip">P0–P6 主路径</span><span class="chip">Gateway MCP First</span><span class="chip">Go Agent 主链路一期不改</span><span class="chip">候选写入 + 人工门禁</span><span class="chip">Runtime Adapter 可选</span></div>
+    <button class="print" onclick="window.print()">打印 / 导出 PDF</button>
+  </header>
+  <nav><a href="#decision">核心决策</a><a href="#architecture">总体架构</a><a href="#designs">两个子设计</a><a href="#roadmap">实施顺序</a><a href="#storage">数据库约束</a><a href="#upgrade">升级边界</a><a href="#acceptance">验收</a></nav>
+
+  <section id="decision" class="grid">
+    <article class="card"><small>01 · 一期</small><h3>Gateway 作为 MCP</h3><p>Native Agent 通过五个 MCP 工具创建、查询、取消和恢复 DSH run，无需增加 Go Executor。</p></article>
+    <article class="card"><small>02 · 业务</small><h3>星火保留事实源</h3><p>项目、需求、本体、ChangeSet 和部署仍由星火 FastAPI/MySQL 管理，知识库保存检索副本。</p></article>
+    <article class="card"><small>03 · 演进</small><h3>Adapter 只在需要时开发</h3><p>完整步骤流、统一停止、断线恢复成为硬需求后，才增加薄 Runtime Adapter。</p></article>
+  </section>
+
+  <section id="architecture" class="section">
+    <div class="title"><b>01</b><div><h2>总体架构</h2><p class="lead">一个用户入口、一个业务事实源、一个 DSH 运行网关。</p></div></div>
+    <div class="diagram">
+      <svg viewBox="0 0 1180 690" role="img" aria-label="PG-AI-Foundation 总体架构">
+        <defs><marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#7890a6"/></marker><marker id="blueArr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#2878ff"/></marker></defs>
+        <rect width="1180" height="690" rx="20" fill="#f8fbff"/>
+        <g fill="none" stroke="#7890a6" stroke-width="2" marker-end="url(#arr)">
+          <line x1="175" y1="107" x2="265" y2="107"/><line x1="425" y1="107" x2="510" y2="107"/><path d="M590 137V195H325V235"/><path d="M590 137V195H735V235"/><line x1="405" y1="272" x2="500" y2="272"/><line x1="580" y1="302" x2="580" y2="360"/><line x1="815" y1="272" x2="910" y2="272"/><line x1="990" y1="302" x2="990" y2="360"/><path d="M735 302V475H580V520"/><path d="M990 420V475H785V520"/><line x1="660" y1="555" x2="705" y2="555"/>
+        </g>
+        <path d="M625 302V334H735V360" fill="none" stroke="#7957d5" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+        <text x="40" y="42" font-size="13" font-weight="700" fill="#2878ff">PRODUCT &amp; CONTROL PLANE</text>
+        <g text-anchor="middle"><rect x="35" y="78" width="140" height="58" rx="10" fill="#fff" stroke="#18b8cf" stroke-width="1.5"/><text x="105" y="103" font-size="13" font-weight="700" fill="#15243a">用户</text><text x="105" y="121" font-size="10" fill="#66768d">统一入口</text>
+        <rect x="265" y="78" width="160" height="58" rx="10" fill="#fff" stroke="#18b8cf" stroke-width="1.5"/><text x="345" y="103" font-size="13" font-weight="700" fill="#15243a">Vue 工作台</text><text x="345" y="121" font-size="10" fill="#66768d">项目页 / Chat</text>
+        <rect x="510" y="78" width="160" height="58" rx="10" fill="#fff" stroke="#19a974" stroke-width="1.5"/><text x="590" y="103" font-size="13" font-weight="700" fill="#15243a">WeKnora Go</text><text x="590" y="121" font-size="10" fill="#66768d">身份 / Native / KB / SSE</text></g>
+        <rect x="25" y="205" width="560" height="245" rx="18" fill="#effaf6" stroke="#a6dec9"/><text x="47" y="230" font-size="12" font-weight="700" fill="#16865f">NATIVE &amp; BUSINESS INTEGRATION</text>
+        <g text-anchor="middle"><rect x="245" y="235" width="160" height="68" rx="10" fill="#fff" stroke="#19a974"/><text x="325" y="263" font-size="13" font-weight="700" fill="#15243a">Native Agent</text><text x="325" y="282" font-size="10" fill="#66768d">主管 Agent</text>
+        <rect x="500" y="235" width="160" height="68" rx="10" fill="#fff" stroke="#18b8cf"/><text x="580" y="263" font-size="13" font-weight="700" fill="#15243a">项目知识库</text><text x="580" y="282" font-size="10" fill="#66768d">RAG / 引用 / 图谱</text>
+        <rect x="500" y="360" width="160" height="68" rx="10" fill="#fff" stroke="#19a974"/><text x="580" y="388" font-size="13" font-weight="700" fill="#15243a">内部业务 MCP</text><text x="580" y="407" font-size="10" fill="#66768d">查询 / 候选 / 校验</text></g>
+        <rect x="625" y="205" width="530" height="245" rx="18" fill="#fff8ee" stroke="#f1c68f"/><text x="647" y="230" font-size="12" font-weight="700" fill="#b66b16">DEEPSEEK HARNESS EXECUTION PLANE</text>
+        <g text-anchor="middle"><rect x="735" y="235" width="160" height="68" rx="10" fill="#fff" stroke="#f39a3f"/><text x="815" y="263" font-size="13" font-weight="700" fill="#15243a">Gateway MCP</text><text x="815" y="282" font-size="10" fill="#66768d">五个 run 工具</text>
+        <rect x="910" y="235" width="160" height="68" rx="10" fill="#fff" stroke="#f39a3f"/><text x="990" y="263" font-size="13" font-weight="700" fill="#15243a">Runtime Gateway</text><text x="990" y="282" font-size="10" fill="#66768d">幂等 / 状态 / 取消</text>
+        <rect x="910" y="360" width="160" height="68" rx="10" fill="#fff" stroke="#7957d5"/><text x="990" y="388" font-size="13" font-weight="700" fill="#15243a">DSH Workers</text><text x="990" y="407" font-size="10" fill="#66768d">代码 / 工作区 / 多工具</text>
+        <rect x="680" y="360" width="150" height="68" rx="10" fill="#faf8ff" stroke="#7957d5" stroke-dasharray="6 4"/><text x="755" y="388" font-size="13" font-weight="700" fill="#7957d5">Runtime Adapter</text><text x="755" y="407" font-size="10" fill="#66768d">未来可选</text></g>
+        <rect x="275" y="490" width="630" height="145" rx="18" fill="#f6f2ff" stroke="#cbbce9"/><text x="297" y="516" font-size="12" font-weight="700" fill="#7957d5">XINGHUO DOMAIN PLANE</text>
+        <g text-anchor="middle"><rect x="500" y="520" width="160" height="70" rx="10" fill="#fff" stroke="#7957d5"/><text x="580" y="548" font-size="13" font-weight="700" fill="#15243a">Integration BFF</text><text x="580" y="568" font-size="10" fill="#66768d">/auth/me / 绑定 / 页面 API</text>
+        <rect x="705" y="520" width="160" height="70" rx="10" fill="#fff" stroke="#7957d5"/><text x="785" y="548" font-size="13" font-weight="700" fill="#15243a">领域服务</text><text x="785" y="568" font-size="10" fill="#66768d">需求 / 本体 / 部署</text>
+        <rect x="930" y="520" width="160" height="70" rx="10" fill="#fff" stroke="#7957d5"/><text x="1010" y="548" font-size="13" font-weight="700" fill="#15243a">MySQL / Git</text><text x="1010" y="568" font-size="10" fill="#66768d">唯一事实源 / 工作区</text></g>
+        <line x1="865" y1="555" x2="930" y2="555" stroke="#7890a6" stroke-width="2" marker-end="url(#arr)"/><path d="M345 136V555H500" fill="none" stroke="#2878ff" stroke-width="2" marker-end="url(#blueArr)"/><text x="358" y="480" font-size="10" fill="#2878ff">同源 /api/pg-platform</text>
+        <g font-size="10" fill="#66768d"><circle cx="405" cy="667" r="5" fill="#19a974"/><text x="417" y="671">一期正式路径</text><circle cx="540" cy="667" r="5" fill="#7957d5"/><text x="552" y="671">未来可选</text><circle cx="650" cy="667" r="5" fill="#f39a3f"/><text x="662" y="671">DSH 执行平面</text></g>
+      </svg>
+    </div>
+    <div class="note"><strong>一期边界：</strong>Gateway MCP 注册到 WeKnora；不修改 <code>session_agent_qa.go</code>、<code>agent_service.go</code>、<code>engine.go</code> 或 <code>container.go</code>。</div>
+  </section>
+
+  <section id="designs" class="section">
+    <div class="title"><b>02</b><div><h2>一个总方案，两个子设计</h2><p class="lead">共享权限、审计、知识和项目上下文，按各自边界独立实施。</p></div></div>
+    <div class="grid2">
+      <article class="card"><small>SUB-DESIGN A</small><h3>DSH Gateway MCP</h3><p>Gateway 隔离 SDK 与版本，提供 create/get/result/cancel/resume。一期为 MCP 工具，未来 Adapter 仍复用同一 HTTP/事件契约。</p></article>
+      <article class="card"><small>SUB-DESIGN B</small><h3>星火能力迁移</h3><p>Vue 重写项目页面；Integration BFF 位于星火 FastAPI；需求、本体、部署继续由领域服务和人工门禁控制。</p></article>
+    </div>
+    <div class="doclinks"><a href="01-deepseek-harness-runtime-integration-plan.html">打开子设计 A HTML</a><a href="02-xinghuo-capability-migration-plan.html">打开子设计 B HTML</a><a href="00-pg-ai-foundation-master-implementation-plan.md">查看完整 Markdown</a></div>
+  </section>
+
+  <section id="roadmap" class="section">
+    <div class="title"><b>03</b><div><h2>P0–P6 实施顺序</h2><p class="lead">先建立保护网，再逐步提高业务复杂度和副作用等级。</p></div></div>
+    <div class="timeline">
+      <div class="phase"><b>P0</b><strong>双基线与升级演练</strong><span>固定两边 commit；纯升级黄金样本与回滚</span></div>
+      <div class="phase"><b>P1</b><strong>项目绑定与 BFF</strong><span>FastAPI Integration BFF；只读工作台</span></div>
+      <div class="phase"><b>P2</b><strong>Gateway MCP</strong><span>独立服务；run 生命周期；Go 主链路不改</span></div>
+      <div class="phase"><b>P3</b><strong>内部草稿 MCP</strong><span>查询、候选、校验；禁止确认和发布</span></div>
+      <div class="phase"><b>P4</b><strong>需求 Agent</strong><span>澄清、证据、候选、人工确认闭环</span></div>
+      <div class="phase"><b>P5</b><strong>本体 Agent</strong><span>expected hash、冲突、ChangeSet、门禁</span></div>
+      <div class="phase"><b>P6</b><strong>编码与部署</strong><span>知识同步、工作区、测试、受控部署</span></div>
+      <div class="phase optional"><b>P7 · OPTIONAL</b><strong>Runtime Adapter</strong><span>仅在完整流式步骤、统一停止/恢复成为硬需求时</span></div>
+    </div>
+  </section>
+
+<section id="storage" class="section">
+<h2>现网数据库基线与一期存储约束</h2>
+<p class="lead">2026-09-30 已通过服务器运行容器、应用连接配置、网络及挂载信息只读核对。WeKnora 与星火同机部署，PG、Redis 均为不同实例；星火业务主库为 MySQL。</p>
+<div class="table"><table><thead><tr><th>用途</th><th>现网实例 / 容器</th><th>数据库</th></tr></thead><tbody><tr><td>WeKnora PostgreSQL</td><td>WeKnora-postgres</td><td>WeKnora</td></tr><tr><td>星火知识库 PostgreSQL</td><td>mem0-postgres-1</td><td>knowledge_base</td></tr><tr><td>星火业务 MySQL</td><td>pangu-mysql（宿主机 3308）</td><td>system_base</td></tr><tr><td>WeKnora Redis</td><td>WeKnora-redis（Redis 7）</td><td>DB 0</td></tr><tr><td>星火 Redis</td><td>redis（Redis 6.2，宿主机 6379）</td><td>DB 编号本次未核对；实例与 WeKnora 独立</td></tr></tbody></table></div>
+<div class="note"><strong>一期固定决策：</strong>Gateway 复用 <code>WeKnora-postgres</code>，新建独立数据库 <code>dsh_runtime</code> 和专用最小权限账号，不复用 <code>postgres</code> 超级用户凭据，不以 WeKnora 库内独立 schema 代替独立库。Redis 复用 <code>WeKnora-redis</code>，使用部署前核验未占用的独立 DB 和 <code>dsh:</code> key 前缀。</div>
+<p>Redis 不使用 WeKnora 的 DB <code>0</code>；若启用 Langfuse，还须避开其实际 DB（默认 <code>1</code>）。DB <code>2</code> 仅为候选，核验未占用后才能配置。一期不新增 PG、Redis 实例，不合并或迁移星火现有数据库。</p>
+<p>PostgreSQL 保存 run、幂等记录、事件游标、终态和产物索引，支持查询与重启恢复；Redis 仅用于锁、短期状态和队列，不能作为唯一事实源；大产物存放于对象存储或受控文件目录。</p>
+<p>Gateway 独立管理迁移、迁移记录和按库备份/恢复，只读写 <code>dsh_runtime</code>；不得直连或读写 WeKnora、星火业务表。知识与业务调用经授权的 WeKnora API / 星火 API、MCP 完成。</p>
+<div class="note orange"><strong>共享实例边界：</strong>CPU、内存和故障影响范围仍共享；Redis DB 与前缀仅为逻辑隔离。实例升级需协调，Gateway 连接数与任务并发需受控，后续可将独立库迁出。不得对共享 Redis 执行 <code>FLUSHALL</code>。</div>
+<p><strong>存储验收：</strong>记录实际实例、库名、账号名、Redis DB 与前缀（不含密码）；验证账号权限与迁移边界、Redis 隔离、Gateway 重启后的 run 持久化，以及独立库备份恢复不改写其他业务数据。</p>
+</section>
+
+  <section id="upgrade" class="section">
+    <div class="title"><b>04</b><div><h2>升级兼容边界</h2><p class="lead">Gateway 降低 Go 合并成本，但产品仍包含前端和部署定制。</p></div></div>
+    <div class="table"><table><thead><tr><th>部分</th><th>一期变化</th><th>上游升级影响</th></tr></thead><tbody>
+      <tr><td>WeKnora Go Agent 主链路</td><td class="good">不因 DSH/星火迁移修改</td><td>冲突概率显著降低</td></tr>
+      <tr><td>WeKnora Vue</td><td>新增项目工作台、导航和业务页面</td><td>仍需合并并回归前端</td></tr>
+      <tr><td>Gateway</td><td>独立版本和数据库</td><td>与 WeKnora 独立升级，只需契约兼容</td></tr>
+      <tr><td>星火 FastAPI</td><td>Integration BFF、绑定、草稿 MCP</td><td>按领域服务版本独立升级</td></tr>
+      <tr><td>Runtime Adapter</td><td class="future">一期不存在</td><td>未来启用后才增加 Go 合并点</td></tr>
+    </tbody></table></div>
+    <div class="note orange"><strong>生产升级仍需演练：</strong>固定官方版本 → 合并到定制 fork → 构建镜像 → 数据库备份 → 测试升级 → API/MCP/SSE/页面回归 → 灰度 → 保留回滚点。</div>
+  </section>
+
+  <section id="acceptance" class="section">
+    <div class="title"><b>05</b><div><h2>一期完成标准</h2><p class="lead">每一项都需要可重复的验证证据。</p></div></div>
+    <div class="grid">
+      <article class="card"><h3>平台</h3><p>项目工作台只需一次登录；租户、项目和撤权校验有效；页面数据继续来自星火事实源。</p></article>
+      <article class="card"><h3>Agent</h3><p>简单 RAG 不调用 DSH；复杂任务经 Gateway MCP；候选不能自动确认或发布。</p></article>
+      <article class="card"><h3>工程</h3><p>run 幂等、可取消、可恢复、可审计；上游升级和业务改造能分别回归与回滚。</p></article>
+    </div>
+  </section>
+  <footer class="footer">PG-AI-Foundation Master Implementation Plan · V2.0 · 2026-09-29</footer>
+</main>
+</body>
+</html>

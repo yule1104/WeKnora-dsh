@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useDeploymentCapabilitiesStore } from '@/stores/deploymentCapabilities'
 import type { DeploymentCapabilityKey } from '@/config/deploymentCapabilities'
 import type { QuestionOrigin } from '@/utils/questionOrigin'
+import { canShowDemoMenuPath, isDemoAdministrator } from '@/config/demoNavigation'
 
 type MenuChild = Record<string, any>
 
@@ -74,11 +75,15 @@ export const useMenuStore = defineStore('menuStore', () => {
   const visibleMenuArr = computed(() => {
     const authStore = useAuthStore()
     const deploymentCapabilities = useDeploymentCapabilitiesStore()
+    const isDemoAdmin = isDemoAdministrator(authStore.isSystemAdmin, authStore.canAccessAllTenants)
     return menuArr.filter(item => {
-      if (authStore.isLiteMode && liteHiddenPaths.has(item.path)) {
+      if (!canShowDemoMenuPath(item.path, authStore.isSystemAdmin, authStore.canAccessAllTenants)) {
         return false
       }
-      if (item.path === 'organizations' && !authStore.hasRole('admin')) {
+      if (!isDemoAdmin && authStore.isLiteMode && liteHiddenPaths.has(item.path)) {
+        return false
+      }
+      if (!isDemoAdmin && item.path === 'organizations' && !authStore.hasRole('admin')) {
         return false
       }
       if (!deploymentCapabilities.isSupported(item.requiredCapability)) {

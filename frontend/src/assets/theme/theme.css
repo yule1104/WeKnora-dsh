@@ -101,6 +101,86 @@
 :root[theme-mode="dark"] *::-webkit-scrollbar-thumb {
     background-color: #4b4b4b !important;
 }
+
+/* 云妆 V2：仅映射品牌视觉变量，不改组件行为。 */
+@font-face {
+    font-family: "YZ Sans";
+    src: url("../brand/ui-sans.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: "YZ Sans";
+    src: url("../brand/ui-sans-medium.woff2") format("woff2");
+    font-weight: 600 700;
+    font-display: swap;
+}
+@font-face {
+    font-family: "YZ Serif";
+    src: url("../brand/brand-serif.woff2") format("woff2");
+    font-weight: 400 700;
+    font-display: swap;
+}
+:root:root,
+:root:root[theme-mode="light"] {
+    --app-font-family: "YZ Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --brand-main: #643347;
+    --td-brand-color-1: #f4ecf0;
+    --td-brand-color-2: #eadce3;
+    --td-brand-color-3: #ddc5d0;
+    --td-brand-color-4: #a4788c;
+    --td-brand-color-5: #78485e;
+    --td-brand-color-6: #643347;
+    --td-brand-color-7: #4b2434;
+    --td-brand-color-8: #321b25;
+    --td-brand-color-9: #2a1820;
+    --td-brand-color-10: #21151b;
+    --td-brand-color: var(--td-brand-color-6);
+    --td-brand-color-hover: #4b2434;
+    --td-brand-color-active: #321b25;
+    --td-brand-color-disabled: #ddc5d0;
+    --td-bg-color-page: #f3f2f4;
+    --td-bg-color-sidebar: #f7f7f8;
+    --td-bg-color-settings-modal: #f7f7f8;
+    --td-bg-color-container-hover: #fcfafc;
+    --td-bg-color-secondarycontainer: #f4ecf0;
+    --td-bg-color-secondarycontainer-hover: #eee5eb;
+    --td-component-stroke: #e3dfe5;
+    --td-component-border: #d8d2da;
+    --td-font-gray-1: #29272c;
+    --td-font-gray-2: #68616a;
+    --td-font-gray-3: #766e78;
+    --td-radius-default: 8px;
+    --td-radius-medium: 8px;
+    --td-radius-large: 12px;
+    --td-radius-extraLarge: 16px;
+}
+
+:root:root[theme-mode="dark"] {
+    --app-font-family: "YZ Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --brand-main: #d8aebf;
+    --td-brand-color-1: #382733;
+    --td-brand-color-2: #472e3c;
+    --td-brand-color-3: #563448;
+    --td-brand-color-4: #643347;
+    --td-brand-color-5: #8f5f74;
+    --td-brand-color-6: #c99daf;
+    --td-brand-color-7: #ddb9c7;
+    --td-brand-color-8: #ead2db;
+    --td-brand-color-9: #f2e3e9;
+    --td-brand-color-10: #faf3f6;
+    --td-brand-color: var(--td-brand-color-6);
+    --td-brand-color-hover: #ddb9c7;
+    --td-brand-color-active: #ead2db;
+    --td-brand-color-disabled: #654558;
+    --td-bg-color-page: #211d22;
+    --td-bg-color-sidebar: #292429;
+    --td-bg-color-settings-modal: #292429;
+    --td-radius-default: 8px;
+    --td-radius-medium: 8px;
+    --td-radius-large: 12px;
+    --td-radius-extraLarge: 16px;
+}
 :root[theme-mode="dark"] *::-webkit-scrollbar-thumb:hover {
     background-color: #5e5e5e !important;
 }

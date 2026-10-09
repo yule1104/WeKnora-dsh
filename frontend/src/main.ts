@@ -19,19 +19,21 @@ import { initFont } from "@/composables/useFont";
 import { installTDesignIconOfflineGuard } from "@/utils/tdesign-icon-offline";
 import { installAutofillGuard } from "@/utils/disable-autofill";
 import { useAuthStore } from "@/stores/auth";
+import { BRAND_NAME } from "@/config/brand";
 
 // 必须在 Vue 组件挂载之前执行，避免 tdesign-icons 运行时请求 tdesign.gtimg.com
 installTDesignIconOfflineGuard();
 
 initTheme();
 initFont();
+document.title = BRAND_NAME;
 
 async function bootstrap() {
   const app = createApp(App);
 
   // 全局错误处理：捕获未处理的组件错误，防止白屏
   app.config.errorHandler = (err, instance, info) => {
-    console.error("[WeKnora] Unhandled Vue error:", err, "\nComponent:", instance, "\nInfo:", info);
+    console.error(`[${BRAND_NAME}] Unhandled Vue error:`, err, "\nComponent:", instance, "\nInfo:", info);
   };
 
   app.use(TDesign);

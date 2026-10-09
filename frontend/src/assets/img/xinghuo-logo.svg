@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" role="img" aria-labelledby="title desc">
+  <title id="title">盘古星火</title>
+  <desc id="desc">橙色星火标志与蓝色品牌字标</desc>
+  <defs>
+    <linearGradient id="flame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffbd2e"/>
+      <stop offset="1" stop-color="#ff8a00"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(3 3)">
+    <path d="M18 65c8-16 24-27 40-32-9 8-17 18-20 29-2 8 0 15 6 21-14-2-24-7-26-18Z" fill="#123e78"/>
+    <path d="M80 33c16 4 25 12 27 24 3 15-13 26-31 29-22 4-47 0-59-10 12 6 29 8 45 5 21-4 31-13 29-24-1-8-6-15-15-20l4-4Z" fill="#123e78"/>
+    <path d="M58 14c9 16 7 28-3 39-8 9-12 19-6 32-17-10-24-23-17-38 5-11 18-18 26-33Z" fill="url(#flame)"/>
+    <path d="M66 43c10 13 7 24-2 34-5 6-7 10-5 16-12-8-14-18-8-28 4-7 10-13 15-22Z" fill="url(#flame)"/>
+    <path d="M88 1c2 11 5 14 16 16-11 2-14 5-16 16-2-11-5-14-16-16 11-2 14-5 16-16Z" fill="#ffa000"/>
+  </g>
+  <text x="122" y="66" fill="#123e78" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="50" font-weight="800" letter-spacing="3">盘古星火</text>
+</svg>
