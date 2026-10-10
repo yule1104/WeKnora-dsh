@@ -125,7 +125,7 @@ export default {
     "historyNoOverrides": "No administrator changes",
   },
   toolbox: {
-    "title": "Toolbox",
+    "title": "Utilities",
     "description": "Manage skills, external tools, and browser connections for your agents.",
     "unavailable": "No tools are available in the current workspace."
   },
@@ -261,7 +261,7 @@ export default {
     "reconnectShort": "Waiting to reconnect",
 },
   artifactLibrary: {
-    title: 'Artifacts',
+    title: 'Generated Files',
     subtitle: 'Files your agents generated across all of your conversations',
     typeFilter: 'Filter by type',
     searchPlaceholder: 'Search filenames',
@@ -295,11 +295,11 @@ export default {
     openSession: 'Open conversation',
     untitledSession: 'Untitled conversation',
     loadMore: 'Load more',
-    loadFailed: 'Could not load artifacts',
+    loadFailed: 'Could not load generated files',
     retry: 'Retry',
     clearFilters: 'Clear filters',
     empty: {
-      title: 'No artifacts yet',
+      title: 'No generated files yet',
       description: 'Ask an agent to produce a report, spreadsheet or slide deck and the files will show up here'
     },
     noMatches: {
@@ -324,11 +324,11 @@ export default {
   },
   menu: {
     sessionInProgress: 'Conversation in progress',
-    knowledgeBase: 'Knowledge Base',
-    agents: 'Agents',
-    artifacts: 'Artifacts',
+    knowledgeBase: 'Knowledge Hub',
+    agents: 'Agent',
+    artifacts: 'Generated Files',
     organizations: 'Shared Spaces',
-    newChat: 'New Chat',
+    newChat: 'AI Assistant',
     settings: 'System Settings',
     logout: 'Logout',
     clearMessages: 'Clear Messages',
@@ -657,7 +657,7 @@ export default {
     filters: 'Filters',
     clearFilters: 'Clear filters',
 
-    title: 'Knowledge Base',
+    title: 'Knowledge Hub',
     fileContent: 'File Content',
     accessInfo: {
       myRole: 'My role',
@@ -1213,7 +1213,7 @@ export default {
     contextCompacted: 'Compacted context',
     contextCompactedSummary: '{before} → {after} tokens',
     contextCompactedDegraded: 'Summary unavailable, raw transcript kept',
-    title: 'Agents',
+    title: 'Agent',
     subtitle: 'Configure and manage your agents to customize conversation behavior and capabilities',
     createAgent: 'Create Agent',
     builtin: 'Built-in',
@@ -2981,19 +2981,19 @@ export default {
     }
   },
   knowledgeList: {
-    create: 'Create Knowledge Base',
-    subtitle: 'Manage and organize your knowledge bases, supporting document-based and FAQ-based knowledge bases',
+    create: 'Create Knowledge Hub',
+    subtitle: 'Manage and organize your knowledge hubs, with document and FAQ collections',
     sharedToOrgs: 'Shared to {count} space(s)',
     uninitializedBanner: 'Some knowledge bases are not initialized. Configure model information in settings before adding documents.',
     empty: {
-      title: 'No knowledge bases yet',
-      description: 'Click "Create Knowledge Base" in the top-right corner to add your first one.',
-      sharedTitle: 'No shared knowledge bases',
-      sharedDescription: 'You can join a shared space or request others to share knowledge bases with you',
+      title: 'No knowledge hubs yet',
+      description: 'Click "Create Knowledge Hub" to add your first one.',
+      sharedTitle: 'No shared knowledge hubs',
+      sharedDescription: 'You can join a shared space or request others to share knowledge hubs with you',
       favoritesTitle: 'No favorites yet',
-      favoritesDescription: 'Star a knowledge base from its card to add it here',
+      favoritesDescription: 'Star a knowledge hub from its card to add it here',
       recentsTitle: 'Nothing here yet',
-      recentsDescription: 'Knowledge bases you recently opened will show up here'
+      recentsDescription: 'Knowledge hubs you recently opened will show up here'
     },
     delete: {
       confirmTitle: 'Delete Confirmation',

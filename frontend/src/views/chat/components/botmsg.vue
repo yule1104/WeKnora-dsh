@@ -79,7 +79,7 @@
                     :title="$t('agent.copy')">
                     <t-icon name="copy" />
                 </t-button>
-                <t-button size="small" variant="outline" shape="round" @click.stop="handleAddToKnowledge"
+                <t-button v-if="canShowAddToKnowledge" size="small" variant="outline" shape="round" @click.stop="handleAddToKnowledge"
                     :title="$t('agent.addToKnowledgeBase')">
                     <t-icon name="bookmark-add" />
                 </t-button>
@@ -164,6 +164,8 @@ import {
 import { useI18n } from 'vue-i18n';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { useUIStore } from '@/stores/ui';
+import { useAuthStore } from '@/stores/auth';
+import { isDemoAdministrator } from '@/config/demoNavigation';
 import {
     buildManualMarkdown,
     formatManualTitle,
@@ -202,6 +204,10 @@ const mentionTagIcon = (item) => {
 const emit = defineEmits(['scroll-bottom', 'render-complete-change', 'fork', 'rewind'])
 const { t } = useI18n()
 const uiStore = useUIStore();
+const authStore = useAuthStore();
+const canShowAddToKnowledge = computed(() =>
+    isDemoAdministrator(authStore.isSystemAdmin, authStore.canAccessAllTenants)
+);
 let parentMd = ref()
 let reviewUrl = ref('')
 let reviewImg = ref(false)

@@ -23,6 +23,13 @@ test('agent actions reuse the fully-rendered answer state', () => {
   assert.match(agentStream, /v-if="answerFullyRendered && event\.done/)
 })
 
+test('only demo administrators see add-to-knowledge in either answer toolbar', () => {
+  for (const source of [botMessage, agentStream]) {
+    assert.match(source, /const canShowAddToKnowledge = computed\(\(\) =>\s*isDemoAdministrator\(authStore\.isSystemAdmin, authStore\.canAccessAllTenants\)/)
+    assert.match(source, /<t-button v-if="canShowAddToKnowledge"[^>]+@click\.stop="handleAddToKnowledge(?:\(event\))?"/)
+  }
+})
+
 test('artifact count is a top-right overlay instead of t-badge', () => {
   assert.match(botMessage, /class="answer-toolbar__artifact"/)
   assert.match(agentStream, /class="answer-toolbar__artifact"/)

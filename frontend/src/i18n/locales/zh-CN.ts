@@ -125,8 +125,8 @@ export default {
     "historyNoOverrides": "无管理员修改",
   },
   toolbox: {
-    "title": "工具箱",
-    "description": "管理智能体可用的技能、外部工具和浏览器连接。",
+    "title": "实用工具",
+    "description": "管理 Agent 可用的技能、外部工具和浏览器连接。",
     "unavailable": "当前空间暂无可用的工具。"
   },
   localBrowser: {
@@ -4999,8 +4999,8 @@ export default {
     defaultLocaleBrowser: '跟随浏览器 / 宿主'
   },
   knowledgeList: {
-    create: '新建知识库',
-    subtitle: '管理和组织您的知识库，支持文档型和问答型知识库',
+    create: '新建智库',
+    subtitle: '管理和组织您的智库，支持文档资料与问答内容',
     sharedToOrgs: '已共享给 {count} 个空间',
     uninitializedBanner: '部分知识库尚未初始化，需要先在设置中配置模型信息才能添加知识文档',
     features: {
@@ -5056,14 +5056,14 @@ export default {
       confirmButton: '删除'
     },
     empty: {
-      title: '暂无知识库',
-      description: '点击左侧快捷操作"新建知识库"按钮创建第一个知识库',
-      sharedTitle: '暂无共享知识库',
-      sharedDescription: '您可以加入共享空间或请求他人共享知识库给您',
+      title: '暂无智库',
+      description: '点击“新建智库”按钮创建第一个智库',
+      sharedTitle: '暂无共享智库',
+      sharedDescription: '您可以加入共享空间或请求他人共享智库给您',
       favoritesTitle: '暂无收藏',
-      favoritesDescription: '在知识库卡片右上角点击星标即可收藏',
+      favoritesDescription: '在智库卡片右上角点击星标即可收藏',
       recentsTitle: '暂无最近访问',
-      recentsDescription: '最近打开过的知识库会出现在这里'
+      recentsDescription: '最近打开过的智库会出现在这里'
     }
   },
   createChat: {
@@ -6613,19 +6613,19 @@ export default {
     contextCompacted: '压缩上下文',
     contextCompactedSummary: '{before} → {after} tokens',
     contextCompactedDegraded: '摘要不可用，已保留原始记录',
-    title: '智能体',
-    subtitle: '配置和管理您的智能体，自定义对话行为和能力',
-    createAgent: '创建智能体',
+    title: 'Agent',
+    subtitle: '配置和管理您的 Agent，自定义对话行为和能力',
+    createAgent: '创建 Agent',
     builtin: '内置',
     disabled: '已停用',
     disable: '停用',
     enable: '启用',
     noDescription: '暂无描述',
-    selectAgent: '选择智能体',
-    noAgents: '暂无智能体',
+    selectAgent: '选择 Agent',
+    noAgents: '暂无 Agent',
     manageAgents: '管理',
-    builtinAgents: '内置智能体',
-    customAgents: '自定义智能体',
+    builtinAgents: '内置 Agent',
+    customAgents: '自定义 Agent',
     selector: {
       title: '选择智能体',
       current: '当前',
@@ -6821,18 +6821,18 @@ export default {
       mcpNone: '不使用'
     },
     detail: {
-      title: '智能体详情',
+      title: 'Agent 详情',
       useInChat: '在对话中使用'
     },
     empty: {
-      title: '暂无自定义智能体',
-      description: '点击右上角按钮创建您的第一个智能体',
-      sharedTitle: '暂无共享智能体',
-      sharedDescription: '您可以加入空间或请求他人将智能体共享给您',
+      title: '暂无自定义 Agent',
+      description: '点击右上角按钮创建您的第一个 Agent',
+      sharedTitle: '暂无共享 Agent',
+      sharedDescription: '您可以加入空间或请求他人将 Agent 共享给您',
       favoritesTitle: '暂无收藏',
-      favoritesDescription: '在智能体卡片右上角点击星标即可收藏',
+      favoritesDescription: '在 Agent 卡片右上角点击星标即可收藏',
       recentsTitle: '暂无最近访问',
-      recentsDescription: '最近使用过的智能体会出现在这里'
+      recentsDescription: '最近使用过的 Agent 会出现在这里'
     },
     sections: {
       builtin: '内置',
@@ -7045,7 +7045,7 @@ export default {
     filters: '筛选',
     clearFilters: '清除筛选',
 
-    title: '知识库',
+    title: '智库',
     fileContent: '文件内容',
     name: '名称',
     description: '描述',
@@ -7696,8 +7696,8 @@ export default {
     }
   },
   artifactLibrary: {
-    title: '产物',
-    subtitle: '智能体在各个会话中生成的文件，都会汇总在这里',
+    title: '生成文件',
+    subtitle: 'Agent 在各个会话中生成的文件，都会汇总在这里',
     typeFilter: '按类型筛选',
     searchPlaceholder: '搜索文件名',
     categories: {
@@ -7730,12 +7730,12 @@ export default {
     openSession: '打开所在会话',
     untitledSession: '未命名会话',
     loadMore: '加载更多',
-    loadFailed: '产物加载失败',
+    loadFailed: '生成文件加载失败',
     retry: '重试',
     clearFilters: '清除筛选',
     empty: {
-      title: '还没有产物',
-      description: '在对话中让智能体生成报告、表格或演示文稿，文件会出现在这里'
+      title: '还没有生成文件',
+      description: '在对话中让 Agent 生成报告、表格或演示文稿，文件会出现在这里'
     },
     noMatches: {
       title: '没有匹配的文件',
@@ -7744,11 +7744,11 @@ export default {
   },
   menu: {
     sessionInProgress: '会话进行中',
-    knowledgeBase: '知识库',
-    agents: '智能体',
-    artifacts: '产物',
+    knowledgeBase: '智库',
+    agents: 'Agent',
+    artifacts: '生成文件',
     organizations: '共享空间',
-    newChat: '智能问答',
+    newChat: 'AI 助手',
     settings: '系统设置',
     logout: '退出登录',
     clearMessages: '清空消息',

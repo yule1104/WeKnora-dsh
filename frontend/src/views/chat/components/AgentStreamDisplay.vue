@@ -409,7 +409,7 @@
                   :title="$t('agent.copy')">
                   <t-icon name="copy" />
                 </t-button>
-                <t-button size="small" variant="outline" shape="round" @click.stop="handleAddToKnowledge(event)"
+                <t-button v-if="canShowAddToKnowledge" size="small" variant="outline" shape="round" @click.stop="handleAddToKnowledge(event)"
                   :title="$t('agent.addToKnowledgeBase')">
                   <t-icon name="bookmark-add" />
                 </t-button>
@@ -660,6 +660,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { useUIStore } from '@/stores/ui';
 import { useSettingsStore } from '@/stores/settings';
 import { useAuthStore } from '@/stores/auth';
+import { isDemoAdministrator } from '@/config/demoNavigation';
 import { useI18n } from 'vue-i18n';
 import i18n from '@/i18n';
 import { hydrateProtectedFileImages, sanitizeMarkdownHTML } from '@/utils/security';
@@ -722,6 +723,9 @@ const route = useRoute();
 const uiStore = useUIStore();
 const settingsStore = useSettingsStore();
 const authStore = useAuthStore();
+const canShowAddToKnowledge = computed(() =>
+  isDemoAdministrator(authStore.isSystemAdmin, authStore.canAccessAllTenants)
+);
 const { t } = useI18n();
 
 ensureMermaidInitialized();
