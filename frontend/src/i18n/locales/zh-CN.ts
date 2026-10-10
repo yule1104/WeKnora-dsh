@@ -5355,7 +5355,7 @@ export default {
     firstTime: '首次使用云妆智能知识平台？',
     registerSuccess: '注册成功，请登录',
     registerFailed: '注册失败',
-    subtitle: 'RAG 问答、ReAct 智能体与 Wiki 知识库，大模型驱动的企业级知识框架',
+    subtitle: '专业知识随时可查，每次回答皆有依据。',
     registerSubtitle: '创建账户并开始使用云妆智能知识平台',
     emailPlaceholder: '输入邮箱地址',
     passwordPlaceholder: '输入密码',

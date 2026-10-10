@@ -95,12 +95,6 @@
       </svg>
     </div>
 
-    <!-- Brand - Top Left -->
-    <div class="header-logo">
-      <img :src="BRAND_LOGO_URL" :alt="BRAND_SHORT_NAME" class="logo-image" />
-      <img :src="BRAND_INVERSE_LOGO_URL" :alt="BRAND_SHORT_NAME" class="logo-image logo-image--inverse" />
-    </div>
-
     <!-- Header Links - Top Right -->
     <div class="header-links">
       <div class="language-switch">
@@ -135,6 +129,10 @@
     <!-- Right Form Section -->
     <div class="form-section">
       <div class="form-panel">
+        <div class="header-logo">
+          <img :src="BRAND_LOGO_URL" :alt="BRAND_SHORT_NAME" class="logo-image" />
+          <img :src="BRAND_INVERSE_LOGO_URL" :alt="BRAND_SHORT_NAME" class="logo-image logo-image--inverse" />
+        </div>
         <div class="brand-intro">
           <p class="brand-intro__eyebrow">YUNZHUANG · INTELLIGENT KNOWLEDGE</p>
           <h1>细致照护，从这里开始。</h1>
@@ -1688,46 +1686,65 @@ onMounted(async () => {
   }
 }
 
-/* 云妆 V2 员工入口：保留所有表单与登录流程，只重排视觉层。 */
+/* 云妆全屏影像入口：保留所有表单与登录流程，只重排视觉层。 */
 .login-layout {
+  display: block;
   min-height: 100vh;
-  background: #fff;
+  background: #b9aeb3 url('@/assets/brand/portrait.png') center 46% / cover no-repeat;
   font-family: "YZ Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+  isolation: isolate;
 
-  &::before { display: none; }
+  &::before {
+    display: block;
+    z-index: 1;
+    background: linear-gradient(90deg, rgba(36, 24, 30, .20), transparent 68%);
+  }
 }
 
 .animated-bg { display: none; }
 
 .form-section {
-  order: 1;
-  flex: 0 0 50%;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-height: 100vh;
   align-items: center;
-  justify-content: center;
-  padding: 150px 48px 70px;
-  background: #fff;
+  justify-content: flex-start;
+  padding: 32px 6vw;
+  background: transparent;
 }
 
 .form-panel {
-  max-width: 440px;
+  box-sizing: border-box;
+  width: min(570px, 100%);
+  max-width: none;
+  max-height: calc(100vh - 64px);
   margin: 0;
+  padding: 32px 46px 28px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, .55);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .77);
+  box-shadow: 0 28px 85px rgba(36, 24, 30, .18);
+  backdrop-filter: blur(28px) saturate(105%);
+  -webkit-backdrop-filter: blur(28px) saturate(105%);
 }
 
 .brand-intro {
-  margin-bottom: 30px;
+  margin: 30px 0 26px;
   color: #29272c;
 
   &__eyebrow {
-    margin: 0 0 16px;
+    margin: 0 0 8px;
     color: #78485e;
-    font-size: 11px;
-    letter-spacing: .18em;
+    font-size: 10px;
+    letter-spacing: .17em;
     font-weight: 600;
   }
 
   h1 {
     margin: 0 0 8px;
-    font: 400 clamp(27px, 2.6vw, 38px)/1.45 "YZ Serif", "Noto Serif SC", serif;
+    font: 400 clamp(27px, 2.6vw, 32px)/1.45 "YZ Serif", "Noto Serif SC", serif;
     letter-spacing: .04em;
   }
 
@@ -1739,11 +1756,14 @@ onMounted(async () => {
 }
 
 .showcase-section {
-  order: 2;
-  flex: 0 0 50%;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
   min-height: 100vh;
   padding: 0;
-  background: #d8c8d0 url('@/assets/brand/portrait.png') center center / cover no-repeat;
+  background: transparent;
 }
 
 .showcase-content {
@@ -1764,9 +1784,7 @@ onMounted(async () => {
 }
 
 .header-logo {
-  position: absolute;
-  top: 44px;
-  left: max(48px, calc((50vw - 440px) / 2));
+  position: static;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -1774,7 +1792,7 @@ onMounted(async () => {
   box-shadow: none;
   backdrop-filter: none;
 
-  .logo-image { width: 194px; }
+  .logo-image { width: 178px; }
   .logo-image--inverse { display: none; }
 }
 
@@ -1802,7 +1820,7 @@ onMounted(async () => {
 
 .form-header {
   text-align: left;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 .form-title {
@@ -1837,42 +1855,60 @@ onMounted(async () => {
 .register-cta__button:hover { background: #f4ecf0; }
 
 .login-features {
-  padding-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding-top: 13px;
   border-top: 1px solid #e3dfe5;
+
+  .feature-item { margin-bottom: 0; font-size: 11px; }
+  .feature-item .feature-icon { width: 16px; height: 16px; margin-right: 5px; background: transparent; }
 }
 
 @media (max-width: 1024px) {
-  .form-section { padding-left: 36px; padding-right: 36px; }
-  .header-logo { left: 36px; top: 36px; }
+  .form-section { padding-left: 4vw; padding-right: 4vw; }
   .header-logo .logo-image { width: 170px; }
 }
 
 @media (max-width: 768px) {
-  .login-layout { flex-direction: column; }
+  .login-layout { overflow: visible; }
   .showcase-section {
-    order: 1;
-    flex: none;
-    min-height: 270px;
-    background-position: center 38%;
+    min-height: 100%;
+    background-position: 66% center;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 300px;
+      background: url('@/assets/brand/portrait.png') center 37% / cover no-repeat;
+    }
   }
   .form-section {
-    order: 2;
-    flex: none;
-    padding: 112px 28px 48px;
+    min-height: 100vh;
+    align-items: flex-end;
+    padding: 240px 0 0;
   }
-  .header-logo { top: 294px; left: 28px; }
   .header-logo .logo-image { width: 164px; }
   .header-links { top: 16px; right: 16px; }
-  .form-panel { max-width: 480px; }
+  .form-panel {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    padding: 28px 26px 34px;
+    border-radius: 24px 24px 0 0;
+    background: rgba(255, 255, 255, .89);
+  }
+  .showcase-content { height: 240px; padding: 12px; }
 }
 
 @media (max-width: 480px) {
-  .showcase-section { min-height: 220px; }
-  .showcase-content { padding: 12px; }
-  .form-section { padding: 108px 24px 40px; }
-  .header-logo { top: 240px; left: 24px; }
+  .showcase-section { min-height: 100%; }
+  .form-section { padding: 240px 0 0; }
   .header-logo .logo-image { width: 152px; }
-  .brand-intro { margin-bottom: 24px; }
+  .brand-intro { margin: 27px 0 24px; }
   .form-card { padding: 0; }
 }
 </style>
@@ -1880,7 +1916,7 @@ onMounted(async () => {
 <style lang="less">
 html[theme-mode="dark"] {
   .login-layout {
-    background: #211d22;
+    background: #211d22 url('@/assets/brand/portrait.png') center 46% / cover no-repeat;
   }
 
   .knowledge-node {
@@ -1954,7 +1990,11 @@ html[theme-mode="dark"] {
     background: #382733;
   }
 
-  .form-section { background: #211d22; }
+  .form-section { background: transparent; }
+  .form-panel {
+    background: rgba(33, 29, 34, .82);
+    border-color: rgba(255, 255, 255, .16);
+  }
   .brand-intro, .form-title { color: #f7f7f8; }
   .brand-intro > p:last-child { color: #c9c1ca; }
   .brand-intro__eyebrow { color: #ddb9c7; }

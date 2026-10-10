@@ -2675,7 +2675,7 @@ export default {
     firstTime: 'New to Yunzhuang AI?',
     registerSuccess: 'Registration successful. Please sign in',
     registerFailed: 'Registration failed',
-    subtitle: 'RAG Q&A, ReAct Agent and Wiki — an LLM-powered enterprise knowledge framework',
+    subtitle: 'Professional knowledge at hand, with sources behind every answer.',
     registerSubtitle: 'Create your account and start using Yunzhuang AI',
     emailPlaceholder: 'Enter email address',
     passwordPlaceholder: 'Enter password',

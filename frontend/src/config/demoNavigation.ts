@@ -1,4 +1,4 @@
-export const DEMO_USER_MENU_PATHS = new Set(['creatChat', 'knowledge-bases', 'artifacts'])
+export const DEMO_USER_MENU_PATHS = new Set(['creatChat', 'knowledge-bases', 'artifacts', 'toolbox', 'organizations'])
 
 export const isDemoAdministrator = (
   isSystemAdmin: boolean,
