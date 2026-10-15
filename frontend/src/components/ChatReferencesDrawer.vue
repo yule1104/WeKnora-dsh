@@ -267,11 +267,11 @@ function savePanelWidths() {
 }
 
 function canOpenSource(item: ReferenceListItem) {
-  return !props.embeddedMode && item.kind === 'document' && !!item.knowledgeId && !!item.chunkId
+  return !props.embeddedMode && item.kind === 'document' && !!item.knowledgeId
 }
 
 function openItemSource(item: ReferenceListItem) {
-  if (!drawer || !item.knowledgeId || !item.chunkId) return
+  if (!drawer || !item.knowledgeId) return
   drawer.openSource({
     chunkId: item.sourceChunkId || item.chunkId,
     knowledgeId: item.knowledgeId,
@@ -287,7 +287,7 @@ function backToList() {
 }
 
 function onSourceUnavailable() {
-  // No original file to show (manual entry, FAQ, deleted file): fall back
+  // No original document to show (FAQ or unsupported source): fall back
   // to the list with the cited card highlighted.
   backToList()
 }
