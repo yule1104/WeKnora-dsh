@@ -393,6 +393,8 @@ const getAgentNotReadyReasonKeysFor = (agent: CustomAgent, sourceTenantId?: stri
   return getAgentNotReadyReasonKeys(agent.config, modelsList.value, {
     isAgentMode,
     isSharedAgent,
+    privateRoutingEnabled: settingsStore.privateRoutingEnabled,
+    agentId: agent.id,
   });
 };
 

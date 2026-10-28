@@ -1,6 +1,7 @@
 import type { CustomAgentConfig } from '@/api/agent'
 import type { ModelConfig } from '@/api/model'
 import { allowedToolsInclude } from './legacy-tool-names'
+import { PRIVATE_AGENT_ID } from './privateRouting'
 
 export type AgentNotReadyReasonKey = 'summary_model' | 'rerank_model' | 'allowed_tools'
 
@@ -51,7 +52,7 @@ export function getAgentNotReadyReasonKeys(
     'model_id' | 'rerank_model_id' | 'kb_selection_mode' | 'allowed_tools' | 'agent_mode'
   > | undefined,
   models: Pick<ModelConfig, 'id' | 'type'>[],
-  options: { isAgentMode: boolean; isSharedAgent: boolean },
+  options: { isAgentMode: boolean; isSharedAgent: boolean; privateRoutingEnabled?: boolean; agentId?: string },
 ): AgentNotReadyReasonKey[] {
   const reasons: AgentNotReadyReasonKey[] = []
 
@@ -59,7 +60,9 @@ export function getAgentNotReadyReasonKeys(
     reasons.push('summary_model')
   }
 
-  if (options.isAgentMode && agentRequiresRerankModel(config)) {
+  const privateWithoutRerank = options.privateRoutingEnabled && !options.isSharedAgent
+    && options.agentId === PRIVATE_AGENT_ID && !config?.rerank_model_id?.trim()
+  if (options.isAgentMode && agentRequiresRerankModel(config) && !privateWithoutRerank) {
     const rerankModelID = config?.rerank_model_id?.trim()
     const rerankExists = !!rerankModelID && (
       options.isSharedAgent

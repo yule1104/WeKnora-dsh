@@ -2555,6 +2555,8 @@ const collectAgentNotReadyReasons = (
   const keys = getAgentNotReadyReasonKeys(agent.config, allModels.value, {
     isAgentMode,
     isSharedAgent,
+    privateRoutingEnabled: settingsStore.privateRoutingEnabled,
+    agentId: agent.id,
   });
   return {
     keys,

@@ -131,6 +131,18 @@ test('getAgentNotReadyReasonKeys requires rerank only in agent mode with KB sear
   ), ['summary_model', 'rerank_model'])
 })
 
+test('private deployment permits the internal agent without rerank but still requires its chat model', () => {
+  const config = { model_id: 'private-chat', kb_selection_mode: 'all', allowed_tools: ['search_knowledge'] }
+  const models = [{ id: 'private-chat', type: 'KnowledgeQA' }]
+  const opts = { isAgentMode: true, isSharedAgent: false, privateRoutingEnabled: true, agentId: 'yunzhuang-internal-qa' }
+  assert.deepEqual(getAgentNotReadyReasonKeys(config, models, opts), [])
+  assert.deepEqual(getAgentNotReadyReasonKeys(config, [], opts), ['summary_model'])
+  assert.deepEqual(getAgentNotReadyReasonKeys(config, models, { ...opts, privateRoutingEnabled: false }), ['rerank_model'])
+  assert.deepEqual(getAgentNotReadyReasonKeys(config, models, { ...opts, agentId: 'another-agent' }), ['rerank_model'])
+  assert.deepEqual(getAgentNotReadyReasonKeys(config, models, { ...opts, isSharedAgent: true }), ['rerank_model'])
+  assert.deepEqual(getAgentNotReadyReasonKeys({ ...config, rerank_model_id: 'missing' }, models, opts), ['rerank_model'])
+})
+
 test('getAgentNotReadyReasonKeys does not treat current shared context as shared without sourceTenantId', () => {
   assert.deepEqual(getAgentNotReadyReasonKeys(
     { model_id: 'deleted-chat' },

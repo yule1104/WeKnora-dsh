@@ -4,6 +4,7 @@ import { build } from 'esbuild'
 import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL, fileURLToPath } from 'node:url'
+import { getAgentNotReadyReasonKeys } from './agent-readiness'
 
 // Bundle the real Pinia store; replace only API infrastructure unrelated to state.
 // This avoids requiring a DOM or making network calls from a state transition test.
@@ -41,6 +42,12 @@ test('real settings store enforces SSE lock, reload, and new conversation transi
     assert.equal(store.selectedAgentId, 'yunzhuang-internal-qa')
     assert.equal(store.settings.isAgentEnabled, true)
     assert.equal(store.settings.conversationModels.selectedChatModelId, 'private-model')
+    const config = { model_id: 'private-model', kb_selection_mode: 'all' as const, allowed_tools: ['search_knowledge'] }
+    const models = [{ id: 'private-model', type: 'KnowledgeQA' }]
+    assert.deepEqual(getAgentNotReadyReasonKeys(config, models, {
+      isAgentMode: true, isSharedAgent: false,
+      privateRoutingEnabled: store.privateRoutingEnabled, agentId: store.selectedAgentId,
+    }), [])
     store.selectAgent('builtin-smart-reasoning')
     assert.equal(store.selectedAgentId, 'yunzhuang-internal-qa')
     // Reopen with stale UI memo, then apply authoritative server route as the page does.
