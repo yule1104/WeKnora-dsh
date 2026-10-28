@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Tencent/WeKnora/internal/privacy"
+	"github.com/Tencent/WeKnora/internal/sandbox"
 	"slices"
 	"strings"
 
@@ -122,7 +123,7 @@ func (s *sessionService) AgentQA(
 	// actually run. A disabled KB scope makes all KB tools ineffective, so it
 	// must not force users to configure an otherwise-unused rerank model.
 	var rerankModel rerank.Reranker
-	if agentRequiresRerankModel(req.CustomAgent) {
+	if agentRequiresRerankForRoute(ctx, req.CustomAgent) {
 		// Rerank model is resolved purely from the agent config now.
 		// We used to fall back to ConversationConfig.RerankModelID at
 		// the tenant level, but that path encouraged "leave rerank
@@ -170,64 +171,70 @@ func (s *sessionService) AgentQA(
 		llmContext = []chat.Message{}
 	}
 
-	// Hold the sandbox across this turn so an install that finishes while we
-	// are running cannot rebuild the VM between tool calls. Staging below is
-	// the first resolve: if the previous turn left a stale mark, that is
-	// where the new image is picked up. HTTP send already holds the lease it
-	// took before persisting the turn, so only direct callers take one here.
-	if !req.TurnLeaseHeld {
-		releaseTurn, err := s.holdSandboxTurn(ctx, sessionID, agentConfig.SandboxConfigID)
-		if err != nil {
-			return err
-		}
-		defer releaseTurn()
-	}
-
-	// Reconcile all durable session attachments into the session's remote
-	// sandbox before the model can request shell or skill execution. The
-	// durable storage URL — not the ephemeral sandbox path — remains the
-	// source of truth. Gated on the sandbox manager advertising a session
-	// filesystem capability so provider-neutral remote wiring stays here.
 	var stagedAttachments []stagedSessionAttachment
-	stager, ok := s.agentService.(sessionAttachmentStager)
-	if !ok {
-		return errors.New("agent service does not support session attachment staging")
-	}
-	// Probe the backend this session's sandbox actually runs on. Gating on the
-	// process-wide manager instead could inspect a different backend than the
-	// named workspace config selected by this agent.
-	inputStore, storeErr := stager.sessionSandboxInputStore(ctx, sessionID, agentConfig.SandboxConfigID)
-	if storeErr != nil {
-		return fmt.Errorf("resolve sandbox file store for session %s: %w", sessionID, storeErr)
-	}
-	mgr, _, layoutErr := resolveSandboxForExecution(
-		ctx, s.sandboxResolver, s.sandboxMgr, s.sandboxPinner,
-		req.Session.TenantID, sessionID, agentConfig.SandboxConfigID, s.sandboxPolicy,
-		withLiteHostSandbox(s.hostSandbox), withLiteDesktop(s.hostDesktop),
-	)
-	layout := sessionWorkspaceLayout(
-		ctx, sessionID, mgr, layoutErr, s.hostSandbox, agentConfig.SandboxConfigID,
-	)
-	if inputStore != nil && strings.TrimSpace(layout.InputDir) != "" {
-		sessionAttachments, loadErr := s.messageRepo.GetSessionAttachments(ctx, sessionID)
-		if loadErr != nil {
-			return fmt.Errorf("load session attachments for sandbox staging: %w", loadErr)
+	var layout sandbox.WorkspaceLayout
+	// A private deployment never stages sensitive attachments into a sandbox.
+	// Session-local attachment:// reading remains available in the native engine.
+	if !privacy.Enabled() {
+		// Hold the sandbox across this turn so an install that finishes while we
+		// are running cannot rebuild the VM between tool calls. Staging below is
+		// the first resolve: if the previous turn left a stale mark, that is
+		// where the new image is picked up. HTTP send already holds the lease it
+		// took before persisting the turn, so only direct callers take one here.
+		if !req.TurnLeaseHeld {
+			releaseTurn, err := s.holdSandboxTurn(ctx, sessionID, agentConfig.SandboxConfigID)
+			if err != nil {
+				return err
+			}
+			defer releaseTurn()
 		}
-		stagedAttachments, err = stager.stageSessionAttachments(
-			ctx, sessionID, agentConfig.SandboxConfigID, req.Session.TenantID, sessionAttachments, layout,
+
+		// Reconcile all durable session attachments into the session's remote
+		// sandbox before the model can request shell or skill execution. The
+		// durable storage URL — not the ephemeral sandbox path — remains the
+		// source of truth. Gated on the sandbox manager advertising a session
+		// filesystem capability so provider-neutral remote wiring stays here.
+		stager, ok := s.agentService.(sessionAttachmentStager)
+		if !ok {
+			return errors.New("agent service does not support session attachment staging")
+		}
+		// Probe the backend this session's sandbox actually runs on. Gating on the
+		// process-wide manager instead could inspect a different backend than the
+		// named workspace config selected by this agent.
+		inputStore, storeErr := stager.sessionSandboxInputStore(ctx, sessionID, agentConfig.SandboxConfigID)
+		if storeErr != nil {
+			return fmt.Errorf("resolve sandbox file store for session %s: %w", sessionID, storeErr)
+		}
+		mgr, _, layoutErr := resolveSandboxForExecution(
+			ctx, s.sandboxResolver, s.sandboxMgr, s.sandboxPinner,
+			req.Session.TenantID, sessionID, agentConfig.SandboxConfigID, s.sandboxPolicy,
+			withLiteHostSandbox(s.hostSandbox), withLiteDesktop(s.hostDesktop),
 		)
-		if err != nil {
-			return fmt.Errorf("restore session attachments into sandbox: %w", err)
-		}
-		for _, staged := range stagedAttachments {
-			if staged.AttachmentPath == "" {
-				continue
+		layout = sessionWorkspaceLayout(
+			ctx, sessionID, mgr, layoutErr, s.hostSandbox, agentConfig.SandboxConfigID,
+		)
+		if inputStore != nil && strings.TrimSpace(layout.InputDir) != "" {
+			sessionAttachments, loadErr := s.messageRepo.GetSessionAttachments(ctx, sessionID)
+			if loadErr != nil {
+				return fmt.Errorf("load session attachments for sandbox staging: %w", loadErr)
 			}
-			if agentConfig.AttachmentSandboxCopies == nil {
-				agentConfig.AttachmentSandboxCopies = make(map[string]string, len(stagedAttachments))
+			stagedAttachments, err = stager.stageSessionAttachments(
+				ctx, sessionID, agentConfig.SandboxConfigID, req.Session.TenantID, sessionAttachments, layout,
+			)
+			if err != nil {
+				return fmt.Errorf("restore session attachments into sandbox: %w", err)
 			}
-			agentConfig.AttachmentSandboxCopies[staged.Path] = staged.AttachmentPath
+			for _, staged := range stagedAttachments {
+				if staged.AttachmentPath == "" {
+					continue
+				}
+				if agentConfig.AttachmentSandboxCopies == nil {
+					agentConfig.AttachmentSandboxCopies = make(map[string]string, len(stagedAttachments))
+				}
+				agentConfig.AttachmentSandboxCopies[staged.Path] = staged.AttachmentPath
+			}
 		}
+
 	}
 
 	// Create agent engine with EventBus

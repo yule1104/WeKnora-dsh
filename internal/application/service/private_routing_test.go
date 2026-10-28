@@ -5,7 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Tencent/WeKnora/internal/agent/tools"
+	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/privacy"
+	"github.com/Tencent/WeKnora/internal/sandbox"
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
@@ -16,7 +19,7 @@ func privateRoutingFixture(t *testing.T) (*PrivateRouter, *gorm.DB, context.Cont
 	t.Helper()
 	t.Cleanup(types.OverrideBuiltinAgentEntriesForTest(map[string]*types.BuiltinAgentEntry{
 		types.BuiltinQuickAnswerID:    {ID: types.BuiltinQuickAnswerID, Config: types.CustomAgentConfig{AgentMode: types.AgentModeQuickAnswer}},
-		types.BuiltinSmartReasoningID: {ID: types.BuiltinSmartReasoningID, Config: types.CustomAgentConfig{AgentMode: types.AgentModeSmartReasoning}},
+		types.BuiltinSmartReasoningID: {ID: types.BuiltinSmartReasoningID, Config: types.CustomAgentConfig{AgentMode: types.AgentModeSmartReasoning, MaxIterations: 50, AllowedTools: []string{"search_knowledge", "read_document", "list_documents"}}},
 	}))
 	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
 	t.Setenv("WEKNORA_PRIVATE_CHAT_MODEL_ID", "template")
@@ -43,6 +46,7 @@ func TestPrivateRouterStickyAndOverrides(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, privacy.AgentID, agent.ID)
 	require.True(t, s.PrivacyLocked)
+	require.True(t, s.PrivacyRouteChanged)
 	require.Equal(t, privacy.ModelID(42), agent.Config.ModelID)
 	var stored types.Model
 	require.NoError(t, db.First(&stored, "id = ?", privacy.ModelID(42)).Error)
@@ -54,6 +58,7 @@ func TestPrivateRouterStickyAndOverrides(t *testing.T) {
 	agent, err = r.Route(ctx, fresh, "现在写一首诗", false)
 	require.NoError(t, err)
 	require.Equal(t, privacy.AgentID, agent.ID)
+	require.False(t, fresh.PrivacyRouteChanged)
 	require.Equal(t, "all", agent.Config.KBSelectionMode)
 	var count int64
 	require.NoError(t, db.Model(&types.CustomAgent{}).Where("tenant_id = ? AND id = ?", 42, privacy.AgentID).Count(&count).Error)
@@ -117,4 +122,59 @@ func TestPrivateRouterDoesNotExposeResourcesInPublicMode(t *testing.T) {
 	require.NotNil(t, agent.Config.MemoryEnabled)
 	require.False(t, *agent.Config.MemoryEnabled)
 	require.ElementsMatch(t, []string{"thinking", "final_answer"}, agent.Config.AllowedTools)
+}
+
+func TestPrivateRouterInternalUsesSmartReasoningAndUpdatesExistingAgent(t *testing.T) {
+	r, db, ctx := privateRoutingFixture(t)
+	require.NoError(t, db.Create(&types.CustomAgent{ID: privacy.AgentID, TenantID: 42, Name: "old", Config: types.CustomAgentConfig{AgentMode: types.AgentModeQuickAnswer}}).Error)
+	a, err := r.EnsureAgent(ctx, 42)
+	require.NoError(t, err)
+	require.Equal(t, types.AgentModeSmartReasoning, a.Config.AgentMode)
+	require.Equal(t, 50, a.Config.MaxIterations)
+	require.Contains(t, a.Config.AllowedTools, "list_documents")
+	require.Contains(t, a.Config.AllowedTools, "read_document")
+	require.Contains(t, a.Config.AllowedTools, "search_knowledge")
+	require.Empty(t, a.Config.RerankModelID)
+	require.GreaterOrEqual(t, a.Config.MaxCompletionTokens, 8192)
+	var stored types.CustomAgent
+	require.NoError(t, db.First(&stored, "id = ? AND tenant_id = ?", privacy.AgentID, 42).Error)
+	require.Equal(t, types.AgentModeSmartReasoning, stored.Config.AgentMode)
+	require.False(t, stored.Config.WebSearchEnabled)
+}
+
+func TestPrivateInternalEngineDoesNotAutoRegisterExternalTools(t *testing.T) {
+	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
+	ctx := context.WithValue(t.Context(), types.TenantIDContextKey, uint64(7))
+	ctx = privacy.WithRoute(ctx, "s", true)
+	kb := &types.KnowledgeBase{ID: "kb"}
+	kb.IndexingStrategy.KeywordEnabled = true
+	svc := newToolSurfaceService(kb)
+	svc.cfg = &config.Config{PromptTemplates: &config.PromptTemplatesConfig{AgentSystemPrompt: []config.PromptTemplate{{Mode: "rag", Default: true, Content: "SMART_BASE_TEMPLATE"}}}}
+	svc.sandboxResolver = stubSandboxResolver{mgr: &capableManager{typ: sandbox.SandboxTypeCube, shell: &stubShellExecutor{}, files: stubSessionFileStore{}}}
+	cfg := toolSurfaceConfig(tools.ToolSearchKnowledge, tools.ToolReadDocument, tools.ToolListDocuments, tools.ToolShellExec, tools.ToolSearchConversations)
+	cfg.SkillsEnabled = true
+	cfg.WebSearchEnabled = true
+	cfg.MCPSelectionMode = "all"
+	cfg.SandboxConfigID = "sandbox"
+	model := &fakeAgentChatModel{}
+	engine, err := svc.CreateAgentEngine(ctx, cfg, model, nil, nil, "s", "m")
+	require.NoError(t, err)
+	_, err = engine.Execute(ctx, "s", "m", "hello", nil)
+	require.NoError(t, err)
+	require.Contains(t, model.lastToolNames, tools.ToolListDocuments)
+	require.Contains(t, model.lastSystemPrompt, "SMART_BASE_TEMPLATE")
+	require.Contains(t, model.lastSystemPrompt, "不能据此声称是全部患者")
+	for _, name := range []string{tools.ToolShellExec, tools.ToolSearchConversations, tools.ToolWebSearch, tools.ToolWebFetch, "local_browser"} {
+		require.NotContains(t, model.lastToolNames, name)
+	}
+}
+
+func TestPrivateRerankExemptionIsLimitedToAuthorizedInternalRoute(t *testing.T) {
+	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
+	a := &types.CustomAgent{ID: privacy.AgentID, Config: types.CustomAgentConfig{KBSelectionMode: "all", AllowedTools: privateReadTools()}}
+	require.True(t, agentRequiresRerankForRoute(t.Context(), a))
+	require.True(t, agentRequiresRerankForRoute(privacy.WithRoute(t.Context(), "s", false), a))
+	require.False(t, agentRequiresRerankForRoute(privacy.WithRoute(t.Context(), "s", true), a))
+	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "false")
+	require.True(t, agentRequiresRerankForRoute(privacy.WithRoute(t.Context(), "s", true), a))
 }

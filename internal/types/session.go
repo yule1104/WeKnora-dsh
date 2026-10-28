@@ -92,6 +92,7 @@ type Session struct {
 	// PinnedAt records when the session was pinned; nil when not pinned.
 	PinnedAt *time.Time `json:"pinned_at,omitempty"`
 
+	PrivacyRouteChanged bool `json:"-" gorm:"-"` // Request-local transition, never persisted.
 	// PrivacyRoute is server-owned; UI memo updates and rewinds cannot clear it.
 	PrivacyRoute     string `json:"privacy_route,omitempty" gorm:"type:varchar(16)"`
 	PrivacyLocked    bool   `json:"privacy_locked" gorm:"not null;default:false"`

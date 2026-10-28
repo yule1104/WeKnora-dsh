@@ -194,6 +194,7 @@
         @artifact-deleted="handleArtifactDeleted" />
 </template>
 <script setup>
+import { shouldNotifyPrivateRoute } from "@/utils/privateRouting";
 import { makeSteerClientId } from '@/utils/steerId';
 import { storeToRefs } from 'pinia';
 import { ref, onMounted, onBeforeMount, onUnmounted, nextTick, watch, reactive, computed } from 'vue';
@@ -1631,9 +1632,10 @@ watch(error, (newError) => {
 onChunk((data) => {
     if (data.response_type === 'agent_route') {
         const routed = data.data || {};
+        const notifySwitch = shouldNotifyPrivateRoute(currentSession.value, routed, lastStreamRequest.value?.method === 'GET');
         useSettingsStoreInstance.applyPrivateRoute(routed);
         currentSession.value = { ...currentSession.value, ...routed, effective_agent_id: routed.agent_id };
-        if (routed.privacy_locked) MessagePlugin.info('已切换至云妆内部问答');
+        if (notifySwitch) MessagePlugin.info('已切换至云妆内部问答');
         return;
     }
     if (data.response_type === 'session_title') {

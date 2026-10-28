@@ -214,6 +214,10 @@ func (s *agentService) CreateAgentEngine(
 		return nil, fmt.Errorf("chat model is nil after initialization")
 	}
 
+	if privacy.Enabled() && privacy.Internal(ctx) {
+		return s.createPrivateInternalEngine(ctx, config, chatModel, eventBus, sessionID)
+	}
+
 	if config.LocalBrowserEnabled && (!s.browserSkill.Enabled() || config.SkillInstallMode()) {
 		return nil, fmt.Errorf("local browser is unavailable for this turn; " +
 			"enable the browser integration or update the input-bar selection")

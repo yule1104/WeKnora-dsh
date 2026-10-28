@@ -37,6 +37,10 @@ func Authorized(ctx context.Context, session string) bool {
 	r, ok := ctx.Value(routeKey{}).(route)
 	return ok && r.session == session
 }
+func Internal(ctx context.Context) bool {
+	r, ok := ctx.Value(routeKey{}).(route)
+	return ok && r.internal
+}
 func Public(ctx context.Context) bool {
 	r, ok := ctx.Value(routeKey{}).(route)
 	return ok && !r.internal

@@ -73,7 +73,7 @@ func (r *PrivateRouter) Acquire(ctx context.Context, tenant uint64, id string) (
 	}, nil
 }
 
-// EnsureAgent copies the operator-selected template into the current tenant.
+// EnsureAgent derives a private smart-reasoning agent and copies the operator-selected model template into the current tenant.
 // This privileged cross-tenant read is scoped to the configured template ID only.
 func (r *PrivateRouter) EnsureAgent(ctx context.Context, tenant uint64) (*types.CustomAgent, error) {
 	templateID := privacy.TemplateModelID()
@@ -112,15 +112,15 @@ func (r *PrivateRouter) EnsureAgent(ctx context.Context, tenant uint64) (*types.
 	if active.Status != types.ModelStatusActive {
 		return nil, errors.New("private chat model is unavailable")
 	}
-	agent := types.GetBuiltinAgentWithContext(ctx, types.BuiltinQuickAnswerID, tenant)
+	agent := types.GetBuiltinAgentWithContext(ctx, types.BuiltinSmartReasoningID, tenant)
 	if r.agents != nil {
-		if configured, err := r.agents.GetAgentByID(ctx, types.BuiltinQuickAnswerID); err == nil && configured != nil {
+		if configured, err := r.agents.GetAgentByID(ctx, types.BuiltinSmartReasoningID); err == nil && configured != nil {
 			copy := *configured
 			agent = &copy
 		}
 	}
 	if agent == nil {
-		return nil, errors.New("quick answer template unavailable")
+		return nil, errors.New("smart reasoning template unavailable")
 	}
 	agent.ID = privacy.AgentID
 	agent.Name = privacy.AgentName
@@ -130,7 +130,8 @@ func (r *PrivateRouter) EnsureAgent(ctx context.Context, tenant uint64) (*types.
 	agent.Description = "内部知识问答；本会话切换后持续使用内部模型。"
 	agent.EnsureDefaults()
 	c := &agent.Config
-	c.AgentMode = types.AgentModeQuickAnswer
+	c.AgentMode = types.AgentModeSmartReasoning
+	c.MaxCompletionTokens = max(c.MaxCompletionTokens, 8192)
 	c.ModelID = model.ID
 	c.QueryUnderstandModelID = model.ID
 	c.RerankModelID = ""
@@ -144,7 +145,8 @@ func (r *PrivateRouter) EnsureAgent(ctx context.Context, tenant uint64) (*types.
 	c.SelectedSkills = nil
 	c.MCPSelectionMode = "none"
 	c.MCPServices = nil
-	c.AllowedTools = []string{}
+	c.AllowedTools = privateReadTools()
+	c.WebFetchEnabled = false
 	c.MultiTurnEnabled = true
 	c.SandboxConfigID = ""
 	c.ImageUploadEnabled = false
@@ -155,7 +157,7 @@ func (r *PrivateRouter) EnsureAgent(ctx context.Context, tenant uint64) (*types.
 	c.MemoryEnabled = &disabled
 	c.QuestionSuggestions.Starters.Enabled = false
 	c.QuestionSuggestions.FollowUps.Enabled = false
-	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(agent).Error; err != nil {
+	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "id"}, {Name: "tenant_id"}}, DoUpdates: clause.AssignmentColumns([]string{"name", "description", "config", "updated_at"})}).Create(agent).Error; err != nil {
 		return nil, err
 	}
 	// Return the enforced copy even if someone edited the stored agent.
@@ -211,6 +213,7 @@ func (r *PrivateRouter) Route(ctx context.Context, session *types.Session, query
 	if res.RowsAffected != 1 {
 		return nil, errors.New("session route changed; retry the question")
 	}
+	session.PrivacyRouteChanged = internal && !persisted.PrivacyLocked
 	session.PrivacyLocked = internal
 	session.PrivacyRoute = mode
 	session.EffectiveAgentID = types.BuiltinSmartReasoningID

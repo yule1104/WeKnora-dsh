@@ -39,6 +39,7 @@ test('real settings store enforces SSE lock, reload, and new conversation transi
     store.snapshotAsDefaultsIfNeeded()
     store.applyPrivateRoute({ privacy_locked: true, agent_id: 'yunzhuang-internal-qa', model_id: 'private-model' })
     assert.equal(store.selectedAgentId, 'yunzhuang-internal-qa')
+    assert.equal(store.settings.isAgentEnabled, true)
     assert.equal(store.settings.conversationModels.selectedChatModelId, 'private-model')
     store.selectAgent('builtin-smart-reasoning')
     assert.equal(store.selectedAgentId, 'yunzhuang-internal-qa')

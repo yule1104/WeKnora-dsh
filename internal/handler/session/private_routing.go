@@ -62,7 +62,7 @@ func rejectPrivateSteer(c *gin.Context) bool {
 
 func privateRouteData(session *types.Session) map[string]interface{} {
 	message := ""
-	if session.PrivacyLocked {
+	if session.PrivacyRouteChanged {
 		message = "已切换至云妆内部问答"
 	}
 	return map[string]interface{}{"session_id": session.ID, "agent_id": session.EffectiveAgentID, "model_id": session.EffectiveModelID, "agent_name": func() string {
@@ -70,7 +70,7 @@ func privateRouteData(session *types.Session) map[string]interface{} {
 			return privacy.AgentName
 		}
 		return "智能推理"
-	}(), "privacy_locked": session.PrivacyLocked, "message": message}
+	}(), "privacy_locked": session.PrivacyLocked, "switched": session.PrivacyRouteChanged, "message": message}
 }
 
 func privateRelease(reqCtx *qaRequestContext) {
