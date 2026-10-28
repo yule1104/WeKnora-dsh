@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"io"
 	"math/rand"
 	"net/http"
@@ -1803,6 +1804,9 @@ func (h *InitializationHandler) fillSecretsFromStoredModel(ctx context.Context, 
 	if req == nil || req.ModelID == "" {
 		return
 	}
+	if privacy.Enabled() && privacy.ReservedModel(req.ModelID, types.MustTenantIDFromContext(ctx)) {
+		return
+	}
 	// A request that already carries every secret needs no lookup — but a
 	// secret stored in extra_config (LKEAP / Volcengine secret_key) is
 	// redacted by GET, so "extraConfig is present" does not mean it is
@@ -1926,6 +1930,10 @@ func (h *InitializationHandler) CheckRemoteModel(c *gin.Context) {
 		c.Error(errors.NewBadRequestError(err.Error()))
 		return
 	}
+	if privacy.Enabled() && privacy.ReservedModel(req.ModelID, types.MustTenantIDFromContext(ctx)) {
+		c.Error(errors.NewForbiddenError("private model connection tests use deployment configuration"))
+		return
+	}
 	h.fillSecretsFromStoredModel(ctx, &req)
 
 	if req.ModelName == "" || req.BaseURL == "" {
@@ -1981,6 +1989,10 @@ func (h *InitializationHandler) TestEmbeddingModel(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error(ctx, "Failed to parse embedding test request", err)
 		c.Error(errors.NewBadRequestError(err.Error()))
+		return
+	}
+	if privacy.Enabled() && privacy.ReservedModel(req.ModelID, types.MustTenantIDFromContext(ctx)) {
+		c.Error(errors.NewForbiddenError("private model connection tests use deployment configuration"))
 		return
 	}
 	h.fillSecretsFromStoredModel(ctx, &req)
@@ -2179,6 +2191,10 @@ func (h *InitializationHandler) CheckRerankModel(c *gin.Context) {
 		c.Error(errors.NewBadRequestError(err.Error()))
 		return
 	}
+	if privacy.Enabled() && privacy.ReservedModel(req.ModelID, types.MustTenantIDFromContext(ctx)) {
+		c.Error(errors.NewForbiddenError("private model connection tests use deployment configuration"))
+		return
+	}
 	h.fillSecretsFromStoredModel(ctx, &req)
 
 	if req.ModelName == "" || req.BaseURL == "" {
@@ -2241,6 +2257,10 @@ func (h *InitializationHandler) CheckASRModel(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error(ctx, "Failed to parse ASR model check request", err)
 		c.Error(errors.NewBadRequestError(err.Error()))
+		return
+	}
+	if privacy.Enabled() && privacy.ReservedModel(req.ModelID, types.MustTenantIDFromContext(ctx)) {
+		c.Error(errors.NewForbiddenError("private model connection tests use deployment configuration"))
 		return
 	}
 	h.fillSecretsFromStoredModel(ctx, &req)

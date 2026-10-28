@@ -3,6 +3,7 @@ package logger
 import (
 	"context"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"io"
 	"os"
 	"path"
@@ -527,7 +528,7 @@ func CloneContext(ctx context.Context) context.Context {
 		newCtx = trace.ContextWithSpan(newCtx, sp)
 	}
 
-	return newCtx
+	return privacy.CopyRoute(ctx, newCtx)
 }
 
 // CloneContextWithoutTrace copies the same identity keys as CloneContext but
@@ -545,5 +546,5 @@ func CloneContextWithoutTrace(ctx context.Context) context.Context {
 			newCtx = context.WithValue(newCtx, k, v)
 		}
 	}
-	return newCtx
+	return privacy.CopyRoute(ctx, newCtx)
 }

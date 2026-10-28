@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -21,9 +22,24 @@ func (h *Handler) UploadTemporaryDocument(c *gin.Context) {
 	sessionID := c.Param("session_id")
 	// Uploading attaches content to the session, so use the strict owner scope:
 	// a tenant admin may read an API-key session but must not add attachments.
-	if _, err := h.sessionService.GetOwnedSession(ctx, sessionID); err != nil {
+	ownedSession, sessionErr := h.sessionService.GetOwnedSession(ctx, sessionID)
+	if sessionErr != nil {
 		c.Error(apperrors.NewNotFoundError("Session not found"))
 		return
+	}
+	if privacy.Enabled() {
+		preparer, ok := h.sessionService.(privateQAPreparer)
+		if !ok {
+			_ = c.Error(apperrors.NewServiceUnavailableError("private routing unavailable"))
+			return
+		}
+		routed, _, release, err := preparer.PreparePrivateQA(ctx, ownedSession, "上传内部附件", true)
+		if err != nil {
+			_ = c.Error(apperrors.NewServiceUnavailableError(err.Error()))
+			return
+		}
+		defer release()
+		ctx = routed
 	}
 	maxBytes := secutils.GetMaxFileSizeMB()*1024*1024 + 1024*1024
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBytes)

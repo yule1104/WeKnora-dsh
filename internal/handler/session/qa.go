@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -39,6 +40,7 @@ const (
 
 // qaRequestContext holds all the common data needed for QA requests
 type qaRequestContext struct {
+	privateRelease        func()
 	ctx                   context.Context
 	c                     *gin.Context
 	sessionID             string
@@ -238,8 +240,28 @@ func (h *Handler) parseQARequest(c *gin.Context, logPrefix string) (*qaRequestCo
 		return nil, nil, errors.NewNotFoundError("Session not found")
 	}
 
-	// Get custom agent if agent_id is provided. Backend resolves shared agent from share relation (no client-provided tenant).
-	customAgent, effectiveTenantID, sharedAgentReadOnly := h.resolveAgent(ctx, c, request.AgentID, request.AgentSourceTenantID)
+	var customAgent *types.CustomAgent
+	var effectiveTenantID uint64
+	var sharedAgentReadOnly bool
+	var routeRelease func()
+	parsed := false
+	defer func() {
+		if !parsed && routeRelease != nil {
+			routeRelease()
+		}
+	}()
+	if privacy.Enabled() {
+		ctx, customAgent, routeRelease, err = h.preparePrivateRequest(ctx, session, &request)
+		if err != nil {
+			return nil, nil, err
+		}
+		c.Request = c.Request.WithContext(ctx)
+		if len(request.Images) > 0 {
+			return nil, nil, errors.NewBadRequestError("内部图片处理需要先配置获准的私域视觉模型")
+		}
+	} else {
+		customAgent, effectiveTenantID, sharedAgentReadOnly = h.resolveAgent(ctx, c, request.AgentID, request.AgentSourceTenantID)
+	}
 	if request.AgentSourceTenantID != 0 && customAgent == nil {
 		return nil, nil, errors.NewNotFoundError("Shared agent not found")
 	}
@@ -442,15 +464,16 @@ func (h *Handler) parseQARequest(c *gin.Context, logPrefix string) (*qaRequestCo
 
 	// Build request context
 	reqCtx := &qaRequestContext{
-		ctx:         ctx,
-		c:           c,
-		sessionID:   sessionID,
-		requestID:   requestID,
-		receivedAt:  receivedAt,
-		query:       modelQuery,
-		userInput:   request.Query,
-		session:     session,
-		customAgent: customAgent,
+		privateRelease: routeRelease,
+		ctx:            ctx,
+		c:              c,
+		sessionID:      sessionID,
+		requestID:      requestID,
+		receivedAt:     receivedAt,
+		query:          modelQuery,
+		userInput:      request.Query,
+		session:        session,
+		customAgent:    customAgent,
 		assistantMessage: &types.Message{
 			SessionID:        sessionID,
 			Role:             "assistant",
@@ -487,6 +510,7 @@ func (h *Handler) parseQARequest(c *gin.Context, logPrefix string) (*qaRequestCo
 		resourceRewriter:      resourceRewriter,
 	}
 
+	parsed = true
 	return reqCtx, &request, nil
 }
 
@@ -998,13 +1022,18 @@ func (h *Handler) KnowledgeQA(c *gin.Context) {
 		c.Error(err)
 		return
 	}
+	defer func() { privateRelease(reqCtx) }()
 
 	// Execute normal mode QA, generate title unless disabled
 	if request.LocalBrowserEnabled {
 		_ = c.Error(errors.NewBadRequestError("Local browser requests must use the agent endpoint"))
 		return
 	}
-	h.executeQA(reqCtx, qaModeNormal, !request.DisableTitle)
+	mode := qaModeNormal
+	if privacy.Enabled() && reqCtx.customAgent.IsAgentMode() {
+		mode = qaModeAgent
+	}
+	h.executeQA(reqCtx, mode, !request.DisableTitle)
 }
 
 // AgentQA godoc
@@ -1028,6 +1057,7 @@ func (h *Handler) AgentQA(c *gin.Context) {
 		c.Error(err)
 		return
 	}
+	defer func() { privateRelease(reqCtx) }()
 
 	// Determine if agent mode should be enabled
 	// Priority: customAgent.IsAgentMode() > request.AgentEnabled
@@ -1229,6 +1259,15 @@ func (h *Handler) holdQATurn(ctx context.Context, reqCtx *qaRequestContext) (fun
 // executeQA is the unified execution flow for both KnowledgeQA and AgentQA modes.
 // It handles message creation, SSE setup, VLM analysis, service invocation, and error handling.
 func (h *Handler) executeQA(reqCtx *qaRequestContext, mode qaMode, generateTitle bool) {
+	releasePrivate := reqCtx.privateRelease
+	reqCtx.privateRelease = nil
+	asyncOwnsPrivate := false
+	defer func() {
+		if !asyncOwnsPrivate && releasePrivate != nil {
+			releasePrivate()
+		}
+	}()
+
 	ctx := reqCtx.ctx
 	sessionID := reqCtx.sessionID
 
@@ -1333,6 +1372,11 @@ func (h *Handler) executeQA(reqCtx *qaRequestContext, mode qaMode, generateTitle
 		return
 	}
 
+	if privacy.Enabled() {
+		if err := h.streamManager.AppendEvent(ctx, sessionID, reqCtx.assistantMessage.ID, interfaces.StreamEvent{ID: "route-" + reqCtx.requestID, Type: "agent_route", Timestamp: time.Now(), Data: privateRouteData(reqCtx.session)}); err != nil {
+			logger.Warnf(ctx, "route event failed: %v", err)
+		}
+	}
 	// Normal mode: register completion handler on EventAgentFinalAnswer
 	// (Agent mode handles completion in the defer block instead)
 	if mode == qaModeNormal {
@@ -1384,7 +1428,11 @@ func (h *Handler) executeQA(reqCtx *qaRequestContext, mode qaMode, generateTitle
 
 	// Execute QA asynchronously
 	asyncDone := make(chan struct{})
+	asyncOwnsPrivate = true
 	go func() {
+		if releasePrivate != nil {
+			defer releasePrivate()
+		}
 		defer close(asyncDone)
 		defer func() {
 			if r := recover(); r != nil {

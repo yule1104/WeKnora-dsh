@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,9 +30,10 @@ type sandboxConfigLookup interface {
 
 // CustomAgentHandler defines the HTTP handler for custom agent operations
 type CustomAgentHandler struct {
-	service      interfaces.CustomAgentService
-	imService    *im.Service
-	disabledRepo interfaces.TenantDisabledSharedAgentRepository
+	privateRouter *service.PrivateRouter
+	service       interfaces.CustomAgentService
+	imService     *im.Service
+	disabledRepo  interfaces.TenantDisabledSharedAgentRepository
 	// userService 仅用于 list 接口批量回填 creator_name，作用见
 	// KnowledgeBaseHandler.userService。
 	userService interfaces.UserService
@@ -49,9 +51,11 @@ func NewCustomAgentHandler(
 	userService interfaces.UserService,
 	sandboxConfigs *service.TenantSandboxConfigService,
 	host service.HostSandboxManager,
+	privateRouter *service.PrivateRouter,
 ) *CustomAgentHandler {
 	return &CustomAgentHandler{
 		service:        service,
+		privateRouter:  privateRouter,
 		imService:      imService,
 		disabledRepo:   disabledRepo,
 		userService:    userService,
@@ -237,6 +241,16 @@ func (h *CustomAgentHandler) GetAgent(c *gin.Context) {
 // @Router       /agents [get]
 func (h *CustomAgentHandler) ListAgents(c *gin.Context) {
 	ctx := c.Request.Context()
+	if privacy.Enabled() {
+		if h.privateRouter == nil {
+			_ = c.Error(errors.NewServiceUnavailableError("private routing unavailable"))
+			return
+		}
+		if _, err := h.privateRouter.EnsureAgent(ctx, types.MustTenantIDFromContext(ctx)); err != nil {
+			_ = c.Error(errors.NewServiceUnavailableError(err.Error()))
+			return
+		}
+	}
 
 	// Get all agents for this tenant
 	agents, err := h.service.ListAgents(ctx)

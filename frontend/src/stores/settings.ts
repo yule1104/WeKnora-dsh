@@ -1,3 +1,4 @@
+import { effectivePrivateAgent, canSelectPrivateAgent, type PrivateRouteState } from "@/utils/privateRouting";
 import { defineStore } from "pinia";
 import { nextTick } from "vue";
 import { BUILTIN_QUICK_ANSWER_ID, BUILTIN_SMART_REASONING_ID } from "@/api/agent";
@@ -122,6 +123,8 @@ export const useSettingsStore = defineStore("settings", {
     _isApplyingSessionState: false,
     // Session-only preference: never written into global settings/localStorage.
     reasoningEffortOverride: '' as ReasoningLevel | '',
+ privateRoutingEnabled: false,
+ privateRoutingLocked: false,
   }),
 
   getters: {
@@ -457,8 +460,26 @@ export const useSettingsStore = defineStore("settings", {
       };
     },
     
+    applyPrivateRoute(state: PrivateRouteState) {
+      this.privateRoutingLocked = !!state.privacy_locked;
+      const modelId = state.effective_model_id || state.model_id;
+      if (modelId) this.settings.conversationModels.selectedChatModelId = modelId;
+      this.settings.selectedAgentId = effectivePrivateAgent(state);
+      this.settings.selectedAgentSourceTenantId = null;
+      this.settings.isAgentEnabled = !this.privateRoutingLocked;
+      this.settings.webSearchEnabled = false;
+      this.settings.localBrowserEnabled = false;
+      this.settings.selectedMCPServices = [];
+      this.settings.selectedSkills = [];
+    },
+    configurePrivateRouting(enabled: boolean, newConversation: boolean) {
+      this.privateRoutingEnabled = enabled;
+      if (enabled && newConversation) this.applyPrivateRoute({privacy_locked: false});
+    },
+
     // 选择智能体（sourceTenantId 仅在使用共享智能体时传入）
     selectAgent(agentId: string, sourceTenantId?: string | null) {
+ if (!canSelectPrivateAgent(this.privateRoutingLocked,agentId)) return;
       this.reasoningEffortOverride = '';
       this.settings.selectedAgentId = agentId;
       this.settings.selectedAgentSourceTenantId = (sourceTenantId != null && sourceTenantId !== "") ? sourceTenantId : null;
@@ -508,6 +529,7 @@ export const useSettingsStore = defineStore("settings", {
 
     // 还原默认（如果有快照），用于离开会话或跨会话切换时。
     restoreDefaultsIfSnapshotted() {
+ this.privateRoutingLocked = false;
       this.reasoningEffortOverride = '';
       if (!this._defaultsSnapshot) return;
       this.settings = this._defaultsSnapshot;

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"slices"
 	"strings"
 
@@ -26,6 +27,9 @@ func (s *sessionService) AgentQA(
 	req *types.QARequest,
 	eventBus *event.EventBus,
 ) error {
+	if privacy.Enabled() && (req.Session == nil || !privacy.Authorized(ctx, req.Session.ID)) {
+		return fmt.Errorf("private routing required before QA")
+	}
 	sessionID := req.Session.ID
 	// Propagate the session ID so stateful sandbox backends (CubeSandbox) can
 	// bind script execution to a per-session MicroVM instance.

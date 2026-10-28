@@ -51,6 +51,7 @@ export interface DeploymentCapability {
 }
 
 export interface DeploymentCapabilitiesResponse {
+  private_routing_enabled?: boolean
   edition: string
   capabilities: Record<string, DeploymentCapability>
 }

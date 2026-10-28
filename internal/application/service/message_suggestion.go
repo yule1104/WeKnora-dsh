@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"regexp"
 	"sort"
 	"strings"
@@ -376,6 +377,10 @@ func (s *messageSuggestionService) generateWithModel(
 	modelCtx := ctx
 	if message.AgentTenantID != 0 {
 		modelCtx = types.WithExecutionTenant(modelCtx, message.AgentTenantID)
+	}
+	if privacy.Enabled() {
+		modelID = privacy.ModelID(types.MustTenantIDFromContext(ctx))
+		modelCtx = privacy.WithRoute(modelCtx, message.SessionID, true)
 	}
 	chatModel, err := s.modelService.GetChatModel(modelCtx, modelID)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"io"
 	"strings"
 
@@ -216,6 +217,35 @@ func (s *agentService) CreateAgentEngine(
 	if config.LocalBrowserEnabled && (!s.browserSkill.Enabled() || config.SkillInstallMode()) {
 		return nil, fmt.Errorf("local browser is unavailable for this turn; " +
 			"enable the browser integration or update the input-bar selection")
+	}
+
+	if privacy.Enabled() && privacy.Public(ctx) {
+		// Automatic sandbox/attachment tools normally bypass AllowedTools. Public
+		// reasoning deliberately never enters that registration path.
+		safe := *config
+		safe.AllowedTools = []string{"thinking", "final_answer"}
+		safe.KnowledgeBases = nil
+		safe.KnowledgeIDs = nil
+		safe.SearchTargets = nil
+		safe.SkillsEnabled = false
+		safe.SkillDirs = nil
+		safe.TenantSkills = nil
+		disabled := false
+		safe.MemoryEnabled = &disabled
+		safe.MCPSelectionMode = "none"
+		safe.MCPServices = nil
+		safe.LocalBrowserEnabled = false
+		safe.WebSearchEnabled = false
+		safe.UseCustomSystemPrompt = true
+		safe.SystemPrompt = "你是通用智能推理助手。基于公开知识回答。涉及内部资料的问题由系统交给内部问答处理。"
+		registry := tools.NewToolRegistry()
+		if err := s.registerTools(ctx, registry, &safe, nil, chatModel, sessionID); err != nil {
+			return nil, err
+		}
+		registry.BindSession(sessionID)
+		engine := agent.NewAgentEngine(&safe, chatModel, registry, eventBus, nil, nil, sessionID, safe.SystemPrompt)
+		engine.SetAppConfig(s.cfg)
+		return engine, nil
 	}
 
 	// 2. Build tool registry

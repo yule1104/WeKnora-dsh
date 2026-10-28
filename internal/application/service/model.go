@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"strings"
 	"unicode/utf8"
 
@@ -99,6 +100,9 @@ func (s *modelService) resolveWeKnoraCloudCredentials(ctx context.Context, param
 // For local models, it initiates an asynchronous download process
 // Remote models are immediately set to active status
 func (s *modelService) CreateModel(ctx context.Context, model *types.Model) error {
+	if err := privateModelMutationGuard(ctx, model.ID); err != nil {
+		return err
+	}
 	logger.Infof(ctx, "Creating model: %s, type: %s, source: %s", model.Name, model.Type, model.Source)
 
 	// Handle remote models (e.g., OpenAI, Azure)
@@ -146,6 +150,9 @@ func (s *modelService) CreateModel(ctx context.Context, model *types.Model) erro
 // An active local model is already present, so the copy does not download it
 // again. A local model that is still downloading or failed starts a pull.
 func (s *modelService) CopyModel(ctx context.Context, sourceID, displayName string) (*types.Model, error) {
+	if err := privateModelMutationGuard(ctx, sourceID); err != nil {
+		return nil, err
+	}
 	sourceID = strings.TrimSpace(sourceID)
 	if sourceID == "" {
 		return nil, apperrors.NewBadRequestError("model ID cannot be empty")
@@ -316,6 +323,9 @@ func (s *modelService) ListModels(ctx context.Context) ([]*types.Model, error) {
 
 // UpdateModel updates an existing model in the repository
 func (s *modelService) UpdateModel(ctx context.Context, model *types.Model) error {
+	if err := privateModelMutationGuard(ctx, model.ID); err != nil {
+		return err
+	}
 	logger.Info(ctx, "Start updating model")
 	logger.Infof(ctx, "Updating model ID: %s, name: %s", model.ID, model.Name)
 
@@ -363,6 +373,9 @@ func (s *modelService) UpdateModel(ctx context.Context, model *types.Model) erro
 func (s *modelService) UpdateModelCredentials(
 	ctx context.Context, id string, apiKey, appSecret *string,
 ) (*types.Model, error) {
+	if err := privateModelMutationGuard(ctx, id); err != nil {
+		return nil, err
+	}
 	tenantID := types.MustTenantIDFromContext(ctx)
 	existing, err := s.repo.GetByID(ctx, tenantID, id)
 	if err != nil {
@@ -401,6 +414,9 @@ func (s *modelService) UpdateModelCredentials(
 
 // ClearModelCredential removes a single credential field. Idempotent.
 func (s *modelService) ClearModelCredential(ctx context.Context, id, field string) error {
+	if err := privateModelMutationGuard(ctx, id); err != nil {
+		return err
+	}
 	tenantID := types.MustTenantIDFromContext(ctx)
 	existing, err := s.repo.GetByID(ctx, tenantID, id)
 	if err != nil {
@@ -444,6 +460,9 @@ func (s *modelService) ClearModelCredential(ctx context.Context, id, field strin
 
 // DeleteModel removes a model from the repository
 func (s *modelService) DeleteModel(ctx context.Context, id string) error {
+	if err := privateModelMutationGuard(ctx, id); err != nil {
+		return err
+	}
 	logger.Info(ctx, "Start deleting model")
 	logger.Infof(ctx, "Deleting model ID: %s", id)
 
@@ -574,6 +593,9 @@ func (s *modelService) getModelUsageDetails(
 // GetEmbeddingModel retrieves and initializes an embedding model instance
 // Takes a model ID and returns an Embedder interface implementation
 func (s *modelService) GetEmbeddingModel(ctx context.Context, modelId string) (embedding.Embedder, error) {
+	if err := privacy.CheckModel(ctx, modelId, false, types.MustTenantIDFromContext(ctx)); err != nil {
+		return nil, err
+	}
 	// Get the model details
 	model, err := s.GetModelByID(ctx, modelId)
 	if err != nil {
@@ -604,6 +626,9 @@ func (s *modelService) GetEmbeddingModel(ctx context.Context, modelId string) (e
 // This is used for cross-tenant knowledge base sharing where the embedding model from
 // the source tenant must be used to ensure vector compatibility
 func (s *modelService) GetEmbeddingModelForTenant(ctx context.Context, modelId string, tenantID uint64) (embedding.Embedder, error) {
+	if err := privacy.CheckModel(ctx, modelId, false, types.MustTenantIDFromContext(ctx)); err != nil {
+		return nil, err
+	}
 	// Check if model ID is empty
 	if modelId == "" {
 		logger.Error(ctx, "Model ID is empty")
@@ -651,6 +676,9 @@ func (s *modelService) GetEmbeddingModelForTenant(ctx context.Context, modelId s
 // GetRerankModel retrieves and initializes a reranking model instance
 // Takes a model ID and returns a Reranker interface implementation
 func (s *modelService) GetRerankModel(ctx context.Context, modelId string) (rerank.Reranker, error) {
+	if err := privacy.CheckModel(ctx, modelId, false, types.MustTenantIDFromContext(ctx)); err != nil {
+		return nil, err
+	}
 	// Get the model details
 	model, err := s.GetModelByID(ctx, modelId)
 	if err != nil {
@@ -680,6 +708,9 @@ func (s *modelService) GetRerankModel(ctx context.Context, modelId string) (rera
 // GetChatModel retrieves and initializes a chat model instance
 // Takes a model ID and returns a Chat interface implementation
 func (s *modelService) GetChatModel(ctx context.Context, modelId string) (chat.Chat, error) {
+	if err := privacy.CheckModel(ctx, modelId, true, types.MustTenantIDFromContext(ctx)); err != nil {
+		return nil, err
+	}
 	// Check if model ID is empty
 	if modelId == "" {
 		logger.Error(ctx, "Model ID is empty")
@@ -703,6 +734,17 @@ func (s *modelService) GetChatModel(ctx context.Context, modelId string) (chat.C
 		return nil, ErrModelNotFound
 	}
 
+	if privacy.Enabled() && (modelId == privacy.ModelID(tenantID) || modelId == privacy.TemplateModelID()) {
+		trusted, loadErr := s.repo.GetByID(ctx, privacy.TemplateTenantID(), privacy.TemplateModelID())
+		if loadErr != nil || trusted == nil || trusted.Type != types.ModelTypeKnowledgeQA || trusted.Status != types.ModelStatusActive {
+			return nil, fmt.Errorf("trusted private model template unavailable")
+		}
+		// Never use endpoint, headers, credentials or protocol from an editable tenant copy.
+		copy := *trusted
+		copy.ID = modelId
+		copy.TenantID = tenantID
+		model = &copy
+	}
 	logger.Infof(ctx, "Getting chat model: %s, source: %s", model.Name, model.Source)
 
 	appID, appSecret := s.resolveWeKnoraCloudCredentials(ctx, &model.Parameters)
@@ -721,6 +763,9 @@ func (s *modelService) GetChatModel(ctx context.Context, modelId string) (chat.C
 
 // GetVLMModel retrieves and initializes a vision language model instance.
 func (s *modelService) GetVLMModel(ctx context.Context, modelId string) (vlm.VLM, error) {
+	if err := privacy.CheckModel(ctx, modelId, false, types.MustTenantIDFromContext(ctx)); err != nil {
+		return nil, err
+	}
 	if modelId == "" {
 		return nil, errors.New("model ID cannot be empty")
 	}
@@ -761,6 +806,9 @@ func (s *modelService) GetVLMModel(ctx context.Context, modelId string) (vlm.VLM
 
 // GetASRModel retrieves and initializes an automatic speech recognition model instance.
 func (s *modelService) GetASRModel(ctx context.Context, modelId string) (asr.ASR, error) {
+	if err := privacy.CheckModel(ctx, modelId, false, types.MustTenantIDFromContext(ctx)); err != nil {
+		return nil, err
+	}
 	if modelId == "" {
 		return nil, errors.New("model ID cannot be empty")
 	}
@@ -810,4 +858,12 @@ func formatModelInUseMessage(kbCount, agentCount int64, memory bool) string {
 		"model is used by %s; reconfigure or remove those references before deleting",
 		joined,
 	)
+}
+
+func privateModelMutationGuard(ctx context.Context, id string) error {
+	tenant, _ := types.TenantIDFromContext(ctx)
+	if privacy.ReservedModel(id, tenant) {
+		return apperrors.NewForbiddenError("private models are managed by deployment configuration")
+	}
+	return nil
 }

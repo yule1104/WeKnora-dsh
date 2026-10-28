@@ -3,6 +3,7 @@ package docparser
 import (
 	"context"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/Tencent/WeKnora/internal/types/interfaces"
@@ -69,6 +70,12 @@ func lookupEngine(name string) (EngineRegistration, bool) {
 func NewReader(
 	ctx context.Context, engine, fileType string, isURL bool, deps ReaderDeps,
 ) (interfaces.DocReader, error) {
+	if privacy.Enabled() {
+		if !isURL && IsSimpleFormat(fileType) {
+			return &SimpleFormatReader{}, nil
+		}
+		return nil, fmt.Errorf("private routing requires an approved local parser for %s", fileType)
+	}
 	if registration, ok := lookupEngine(engine); ok {
 		return registration.NewReader(ctx, deps)
 	}

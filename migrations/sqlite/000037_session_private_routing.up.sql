@@ -1,0 +1,2 @@
+ALTER TABLE sessions ADD COLUMN privacy_route VARCHAR(16);
+ALTER TABLE sessions ADD COLUMN privacy_locked BOOLEAN NOT NULL DEFAULT FALSE;

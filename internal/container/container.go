@@ -345,6 +345,7 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	must(container.Provide(memory.NewMemoryService))
 
 	logger.Debugf(ctx, "[Container] Registering session service...")
+	must(container.Provide(service.NewPrivateRouter))
 	must(container.Provide(service.NewSessionService))
 	must(container.Provide(service.NewTenantSkillService))
 	// The member-facing half of env vars is its own service because its

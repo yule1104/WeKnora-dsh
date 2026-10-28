@@ -12,6 +12,7 @@ package langfuse
 
 import (
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"os"
 	"strconv"
 	"strings"
@@ -118,6 +119,9 @@ func LoadConfigFromEnv() Config {
 		cfg.SampleRate = 1.0
 	}
 
+	if privacy.Enabled() {
+		cfg.Enabled = false
+	}
 	return cfg
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	stderrors "errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"strings"
 
 	"github.com/Tencent/WeKnora/internal/application/repository"
@@ -142,6 +143,7 @@ func generateEventID(suffix string) string {
 // (see service.LoadAgentHistory and chat_pipeline history loading) — there is no
 // separate cross-turn cache layer.
 type sessionService struct {
+	privateRouter         *PrivateRouter
 	cfg                   *config.Config                         // Application configuration
 	sessionRepo           interfaces.SessionRepository           // Repository for session data
 	messageRepo           interfaces.MessageRepository           // Repository for message data
@@ -200,9 +202,11 @@ func NewSessionService(cfg *config.Config,
 	sandboxConfigRepo repository.TenantSandboxConfigRepository,
 	tenantSkillRepo repository.TenantSkillRepository,
 	busyGate *SessionBusyGate,
+	privateRouter *PrivateRouter,
 ) interfaces.SessionService {
 	return &sessionService{
 		cfg:                   cfg,
+		privateRouter:         privateRouter,
 		sessionRepo:           sessionRepo,
 		messageRepo:           messageRepo,
 		knowledgeBaseService:  knowledgeBaseService,
@@ -287,6 +291,13 @@ func (s *sessionService) GetSession(ctx context.Context, id string) (*types.Sess
 		}
 	}
 
+	if privacy.Enabled() {
+		session.EffectiveAgentID = types.BuiltinSmartReasoningID
+		if session.PrivacyLocked {
+			session.EffectiveAgentID = privacy.AgentID
+			session.EffectiveModelID = privacy.ModelID(session.TenantID)
+		}
+	}
 	logger.Infof(ctx, "Session retrieved successfully, ID: %s, tenant ID: %d", session.ID, session.TenantID)
 	return session, nil
 }
@@ -836,6 +847,17 @@ func (s *sessionService) GenerateTitle(ctx context.Context,
 	// Skip if title already exists
 	if session.Title != "" {
 		return session.Title, nil
+	}
+	if privacy.Enabled() {
+		if s.privateRouter == nil {
+			return "", fmt.Errorf("private routing unavailable")
+		}
+		agent, e := s.privateRouter.EnsureAgent(ctx, session.TenantID)
+		if e != nil {
+			return "", e
+		}
+		modelID = agent.Config.ModelID
+		ctx = privacy.WithRoute(ctx, session.ID, true)
 	}
 	var err error
 	// Get the first user message, either from provided messages or repository

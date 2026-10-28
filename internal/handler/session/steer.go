@@ -488,6 +488,9 @@ func mentionedItemsToRaw(items types.MentionedItems) []interface{} {
 // @Security     ApiKeyAuth
 // @Router       /sessions/{session_id}/steer [post]
 func (h *Handler) SteerMessage(c *gin.Context) {
+	if rejectPrivateSteer(c) {
+		return
+	}
 	ctx := logger.CloneContext(c.Request.Context())
 	sessionID := secutils.SanitizeForLog(c.Param("session_id"))
 	if sessionID == "" {
@@ -643,6 +646,9 @@ func (h *Handler) SteerMessage(c *gin.Context) {
 // @Security     ApiKeyAuth
 // @Router       /sessions/{session_id}/steer/{steer_id}/inject [post]
 func (h *Handler) PromoteSteerMessage(c *gin.Context) {
+	if rejectPrivateSteer(c) {
+		return
+	}
 	ctx := logger.CloneContext(c.Request.Context())
 	sessionID := secutils.SanitizeForLog(c.Param("session_id"))
 	steerID := c.Param("steer_id")

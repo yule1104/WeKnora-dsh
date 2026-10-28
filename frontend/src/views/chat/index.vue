@@ -320,6 +320,7 @@ const loadSessionAndHydrate = async (sid) => {
             currentSession.value = sessionRes.data;
             const lastState = sessionRes.data.last_request_state;
             useSettingsStoreInstance.hydrateSessionInputState(lastState, preserveDraft);
+ if (sessionRes.data.effective_agent_id) useSettingsStoreInstance.applyPrivateRoute(sessionRes.data);
         }
     } catch (error) {
         console.error('Failed to load session data:', error);
@@ -1628,6 +1629,13 @@ watch(error, (newError) => {
 });
 
 onChunk((data) => {
+    if (data.response_type === 'agent_route') {
+        const routed = data.data || {};
+        useSettingsStoreInstance.applyPrivateRoute(routed);
+        currentSession.value = { ...currentSession.value, ...routed, effective_agent_id: routed.agent_id };
+        if (routed.privacy_locked) MessagePlugin.info('已切换至云妆内部问答');
+        return;
+    }
     if (data.response_type === 'session_title') {
         const title = data.content || data.data?.title;
         if (title && data.data?.session_id) {

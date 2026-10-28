@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getDeploymentCapabilities } from "@/api/system";
+import { canSelectPrivateAgent } from "@/utils/privateRouting";
 import { ref, onMounted, onBeforeUnmount, onUnmounted, computed, watch, nextTick, h, type PropType } from "vue";
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
@@ -1909,10 +1911,15 @@ const closeMentionSelector = (e: MouseEvent) => {
 let resizeHandler: (() => void) | null = null;
 let scrollHandler: (() => void) | null = null;
 
-onMounted(() => {
+onMounted(async () => {
   if (props.autoFocus) void focusInput();
   // Embed 渠道由宿主注入 agent/KB，勿拉取需 JWT 的平台资源
   if (props.embeddedMode) return;
+
+  try {
+    const policy = await getDeploymentCapabilities();
+    settingsStore.configurePrivateRouting(!!policy.data?.private_routing_enabled, !props.sessionId);
+  } catch { /* Backend remains authoritative when capabilities are unavailable. */ }
 
   browserConnection.watchStatus();
 
@@ -2327,6 +2334,7 @@ const handleAgentNotReady = (
 };
 
 const handleSelectAgent = async (agent: CustomAgent, sourceTenantId?: string) => {
+ if (!canSelectPrivateAgent(settingsStore.privateRoutingLocked,agent.id)) { MessagePlugin.info("此对话已锁定云妆内部问答，请新建对话使用智能推理。"); return; }
   if (!chatResources.isLoaded('models')) {
     await loadChatModels()
   }

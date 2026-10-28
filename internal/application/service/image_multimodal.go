@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"io"
 	"os"
 	"strings"
@@ -884,6 +885,9 @@ func (s *ImageMultimodalService) resolveVLM(ctx context.Context, kbID, knowledge
 		return model, vlmCfg, err
 	}
 
+	if privacy.Enabled() {
+		return nil, vlmCfg, fmt.Errorf("private routing blocks inline VLM configuration; use an approved model ID")
+	}
 	// Legacy: create VLM from inline config
 	model, err := vlm.NewVLMFromLegacyConfig(vlmCfg, s.ollamaService)
 	return model, vlmCfg, err

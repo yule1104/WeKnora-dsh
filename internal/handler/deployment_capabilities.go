@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"net/http"
 	"strings"
 
@@ -35,8 +36,9 @@ type DeploymentCapability struct {
 
 // DeploymentCapabilitiesData is returned by GET /system/capabilities.
 type DeploymentCapabilitiesData struct {
-	Edition      string                          `json:"edition"`
-	Capabilities map[string]DeploymentCapability `json:"capabilities"`
+	PrivateRoutingEnabled bool                            `json:"private_routing_enabled"`
+	Edition               string                          `json:"edition"`
+	Capabilities          map[string]DeploymentCapability `json:"capabilities"`
 }
 
 // DeploymentFeatureAvailability mirrors injected backend handlers/services.
@@ -138,7 +140,11 @@ func (h *SystemHandler) GetDeploymentCapabilities(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"msg":  "success",
-		"data": overlayLiveDockerSandboxCapability(h.deploymentCapabilities),
+		"data": func() DeploymentCapabilitiesData {
+			data := overlayLiveDockerSandboxCapability(h.deploymentCapabilities)
+			data.PrivateRoutingEnabled = privacy.Enabled()
+			return data
+		}(),
 	})
 }
 

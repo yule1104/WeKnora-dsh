@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"strings"
 	"time"
 
@@ -26,6 +27,9 @@ func (s *sessionService) KnowledgeQA(
 	req *types.QARequest,
 	eventBus *event.EventBus,
 ) error {
+	if privacy.Enabled() && (req.Session == nil || !privacy.Authorized(ctx, req.Session.ID)) {
+		return fmt.Errorf("private routing required before QA")
+	}
 	webSearchEnabled := resolveWebSearchEnabled(req)
 	logger.Infof(
 		ctx,
