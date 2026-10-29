@@ -11,6 +11,7 @@ import (
 	"github.com/Tencent/WeKnora/internal/application/access"
 	"github.com/Tencent/WeKnora/internal/application/repository"
 	"github.com/Tencent/WeKnora/internal/logger"
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/Tencent/WeKnora/internal/types/interfaces"
 	"github.com/google/uuid"
@@ -309,6 +310,10 @@ func (s *customAgentService) UpdateAgent(
 	}
 	if err := s.checkSharedAgentKBScope(ctx, existingAgent, agent.Config); err != nil {
 		return nil, err
+	}
+	if privacy.Enabled() && agent.ID == privacy.AgentID {
+		enforcePrivateAgentPolicy(agent, tenantID)
+		existingAgent.Name = agent.Name
 	}
 	existingAgent.Config = agent.Config
 	existingAgent.UpdatedAt = time.Now()

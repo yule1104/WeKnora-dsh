@@ -6761,6 +6761,7 @@ export default {
       promptsConfigDesc: '設定系統提示語、脈絡模板、意圖/改寫/兜底提示語',
       modelConfig: '模型設定',
       modelConfigDesc: '設定對話模型、ReRank 等輔助模型及生成參數',
+      privatePolicyHint: '為保護內部資料，模型、知識庫範圍、工具及聯網、MCP、記憶、附件等設定由系統統一管理；生成參數等未受策略約束的設定可編輯儲存。',
       toolsConfig: '工具設定',
       toolsConfigDesc: '設定 Agent 可以使用的工具',
       knowledgeConfig: '知識庫',

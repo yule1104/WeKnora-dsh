@@ -201,7 +201,17 @@ func (h *CustomAgentHandler) GetAgent(c *gin.Context) {
 		return
 	}
 
-	agent, err := h.service.GetAgentByID(ctx, id)
+	var agent *types.CustomAgent
+	var err error
+	if privacy.Enabled() && id == privacy.AgentID {
+		if h.privateRouter == nil {
+			_ = c.Error(errors.NewServiceUnavailableError("private routing unavailable"))
+			return
+		}
+		agent, err = h.privateRouter.EnsureAgent(ctx, types.MustTenantIDFromContext(ctx))
+	} else {
+		agent, err = h.service.GetAgentByID(ctx, id)
+	}
 	if err != nil {
 		logger.ErrorWithFields(ctx, err, map[string]interface{}{
 			"agent_id": id,
@@ -241,12 +251,14 @@ func (h *CustomAgentHandler) GetAgent(c *gin.Context) {
 // @Router       /agents [get]
 func (h *CustomAgentHandler) ListAgents(c *gin.Context) {
 	ctx := c.Request.Context()
+	var privateAgent *types.CustomAgent
 	if privacy.Enabled() {
 		if h.privateRouter == nil {
 			_ = c.Error(errors.NewServiceUnavailableError("private routing unavailable"))
 			return
 		}
-		if _, err := h.privateRouter.EnsureAgent(ctx, types.MustTenantIDFromContext(ctx)); err != nil {
+		var err error
+		if privateAgent, err = h.privateRouter.EnsureAgent(ctx, types.MustTenantIDFromContext(ctx)); err != nil {
 			_ = c.Error(errors.NewServiceUnavailableError(err.Error()))
 			return
 		}
@@ -262,6 +274,13 @@ func (h *CustomAgentHandler) ListAgents(c *gin.Context) {
 		// is already logged above.
 		_ = c.Error(errors.NewInternalServerError("Failed to list agents"))
 		return
+	}
+	if privateAgent != nil {
+		for i, agent := range agents {
+			if agent.ID == privacy.AgentID {
+				agents[i] = privateAgent
+			}
+		}
 	}
 
 	// Optional creator filter — see the matching block in

@@ -142,6 +142,27 @@ func TestPrivateRouterInternalUsesSmartReasoningAndUpdatesExistingAgent(t *testi
 	require.False(t, stored.Config.WebSearchEnabled)
 }
 
+func TestPrivateRouterPreservesSavedSettingsAndEnforcesPrivacy(t *testing.T) {
+	r, db, ctx := privateRoutingFixture(t)
+	_, err := r.EnsureAgent(ctx, 42)
+	require.NoError(t, err)
+	var saved types.CustomAgent
+	require.NoError(t, db.First(&saved, "id = ? AND tenant_id = ?", privacy.AgentID, 42).Error)
+	saved.Config.MaxIterations = 25
+	saved.Config.MaxCompletionTokens = 2048
+	saved.Config.WebSearchEnabled = true
+	saved.Config.ModelID = "external"
+	require.NoError(t, db.Save(&saved).Error)
+	a, err := r.EnsureAgent(ctx, 42)
+	require.NoError(t, err)
+	require.Equal(t, 25, a.Config.MaxIterations)
+	require.Equal(t, 2048, a.Config.MaxCompletionTokens)
+	require.False(t, a.Config.WebSearchEnabled)
+	require.Equal(t, privacy.ModelID(42), a.Config.ModelID)
+	require.NoError(t, db.First(&saved, "id = ? AND tenant_id = ?", privacy.AgentID, 42).Error)
+	require.Equal(t, 25, saved.Config.MaxIterations)
+}
+
 func TestPrivateInternalEngineDoesNotAutoRegisterExternalTools(t *testing.T) {
 	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
 	ctx := context.WithValue(t.Context(), types.TenantIDContextKey, uint64(7))

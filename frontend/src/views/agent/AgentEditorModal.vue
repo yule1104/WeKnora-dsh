@@ -543,6 +543,7 @@
         <div class="section-header">
           <h2>{{ $t('agent.editor.modelConfig') }}</h2>
           <p class="section-description">{{ $t('agent.editor.modelConfigDesc') }}</p>
+          <p v-if="formData.id === PRIVATE_AGENT_ID" class="section-description">{{ $t('agent.editor.privatePolicyHint') }}</p>
         </div>
 
         <div class="settings-group">
@@ -560,6 +561,7 @@
             <div class="setting-control">
               <ModelSelector model-type="KnowledgeQA" :selected-model-id="formData.config.model_id"
                 :all-models="allModels"
+                :disabled="formData.id === PRIVATE_AGENT_ID"
                 @update:selected-model-id="(val: string) => formData.config.model_id = val"
                 @add-model="handleAddModel('llm')" :placeholder="$t('agent.editor.modelPlaceholder')" />
             </div>
@@ -699,7 +701,7 @@
                 <t-radio-button value="unlimited">{{ $t('agent.editor.maxIterationsUnlimited') }}</t-radio-button>
               </t-radio-group>
               <t-input-number v-if="maxIterationsMode === 'limit'" v-model="formData.config.max_iterations"
-                :min="2" :max="50" theme="column" />
+                :min="2" :max="100" theme="column" />
             </div>
           </div>
 
@@ -1894,6 +1896,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useOrganizationStore } from '@/stores/organization';
 import { useChatResourcesStore } from '@/stores/chatResources';
 import { useDeploymentCapabilitiesStore } from '@/stores/deploymentCapabilities';
+import { PRIVATE_AGENT_ID } from '@/utils/privateRouting';
 import { HOST_SKILL_TARGET_ID, hostSkillTargetRecord, hostSkillsOnly } from '@/utils/skillTarget';
 import { useEditorResourcesStore } from '@/stores/editorResources';
 import AgentAvatar from '@/components/AgentAvatar.vue';
@@ -2533,6 +2536,8 @@ const hasKnowledgeBase = computed(() => {
 });
 
 const showRerankModelField = computed(() => {
+  // The private route deliberately disables external reranking.
+  if (formData.value.id === PRIVATE_AGENT_ID) return false;
   if (!isAgentMode.value) return hasKnowledgeBase.value;
   return hasKnowledgeBase.value || agentRequiresRerankModel(formData.value.config);
 });

@@ -6761,6 +6761,7 @@ export default {
       promptsConfigDesc: '配置系统提示词、上下文模板、意图/改写/兜底提示词',
       modelConfig: '模型配置',
       modelConfigDesc: '配置对话模型、ReRank 等辅助模型及生成参数',
+      privatePolicyHint: '为保护内部资料，模型、知识库范围、工具及联网、MCP、记忆、附件等设置由系统统一管理；生成参数等未受策略约束的设置可编辑保存。',
       toolsConfig: '工具配置',
       toolsConfigDesc: '配置 Agent 可以使用的工具',
       knowledgeConfig: '知识库',

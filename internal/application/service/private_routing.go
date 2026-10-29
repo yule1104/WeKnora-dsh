@@ -129,11 +129,44 @@ func (r *PrivateRouter) EnsureAgent(ctx context.Context, tenant uint64) (*types.
 	agent.CreatedBy = ""
 	agent.Description = "内部知识问答；本会话切换后持续使用内部模型。"
 	agent.EnsureDefaults()
+	agent.Config.MaxCompletionTokens = max(agent.Config.MaxCompletionTokens, 8192)
+	enforcePrivateAgentPolicy(agent, tenant)
+	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "id"}, {Name: "tenant_id"}}, DoNothing: true}).Create(agent).Error; err != nil {
+		return nil, err
+	}
+	var stored types.CustomAgent
+	if err := r.db.WithContext(ctx).Where("id = ? AND tenant_id = ?", privacy.AgentID, tenant).First(&stored).Error; err != nil {
+		return nil, err
+	}
+	// Upgrade the legacy quick-answer configuration without discarding edits to
+	// agents already using smart reasoning.
+	if stored.Config.AgentMode == types.AgentModeQuickAnswer {
+		result := r.db.WithContext(ctx).Model(&types.CustomAgent{}).
+			Where("id = ? AND tenant_id = ? AND updated_at = ?", privacy.AgentID, tenant, stored.UpdatedAt).
+			Updates(map[string]any{"name": agent.Name, "description": agent.Description, "config": agent.Config, "updated_at": time.Now()})
+		if result.Error != nil {
+			return nil, result.Error
+		}
+		if result.RowsAffected == 1 {
+			return agent, nil
+		}
+		if err := r.db.WithContext(ctx).Where("id = ? AND tenant_id = ?", privacy.AgentID, tenant).First(&stored).Error; err != nil {
+			return nil, err
+		}
+	}
+	stored.EnsureDefaults()
+	enforcePrivateAgentPolicy(&stored, tenant)
+	return &stored, nil
+}
+
+// enforcePrivateAgentPolicy applies non-editable privacy boundaries on every
+// write and use; all other saved settings are left intact.
+func enforcePrivateAgentPolicy(agent *types.CustomAgent, tenant uint64) {
+	agent.Name = privacy.AgentName
 	c := &agent.Config
 	c.AgentMode = types.AgentModeSmartReasoning
-	c.MaxCompletionTokens = max(c.MaxCompletionTokens, 8192)
-	c.ModelID = model.ID
-	c.QueryUnderstandModelID = model.ID
+	c.ModelID = privacy.ModelID(tenant)
+	c.QueryUnderstandModelID = privacy.ModelID(tenant)
 	c.RerankModelID = ""
 	c.VLMModelID = ""
 	c.ASRModelID = ""
@@ -157,11 +190,6 @@ func (r *PrivateRouter) EnsureAgent(ctx context.Context, tenant uint64) (*types.
 	c.MemoryEnabled = &disabled
 	c.QuestionSuggestions.Starters.Enabled = false
 	c.QuestionSuggestions.FollowUps.Enabled = false
-	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "id"}, {Name: "tenant_id"}}, DoUpdates: clause.AssignmentColumns([]string{"name", "description", "config", "updated_at"})}).Create(agent).Error; err != nil {
-		return nil, err
-	}
-	// Return the enforced copy even if someone edited the stored agent.
-	return agent, nil
 }
 
 func (r *PrivateRouter) Route(ctx context.Context, session *types.Session, query string, explicit bool) (*types.CustomAgent, error) {
