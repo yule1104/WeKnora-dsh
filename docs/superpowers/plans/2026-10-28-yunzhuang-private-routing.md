@@ -11,6 +11,7 @@
 - 2026-10-29 用户授权暂用现有外部 Embedding 和图片识别：独立设置 `WEKNORA_PRIVATE_ALLOW_EXTERNAL_EMBEDDING=true`、`WEKNORA_PRIVATE_ALLOW_EXTERNAL_VLM=true`。例外只用于各自能力，不放开文本生成、Rerank 或 ASR；未来接入私域替代模型后关闭。入库摘要、问题生成、Wiki 等非公开对话文本调用强制解析到可信内部模型，不再受知识库遗留外部摘要模型配置影响。此临时例外意味着文档切片及图片会发送给相应外部服务，不能称整条入库链路不出私域。
 - 发布后端必须保留原版本的解析能力：先执行 `scripts/build-anydoc-lib.sh` 构建匹配源码的静态库，再以 `-tags anydoc` 构建 Go 二进制（标准 Dockerfile 默认 `WITH_ANYDOC=1`）。发布候选与原后端分别读取 `/api/v1/system/parser-engines`，候选不得丢失原先可用的引擎及其格式，并用合成 Markdown、Office 与图片文件执行完整上传入库验收。
 - 私域解析器保留进程内 Simple/AnyDoc，以及服务端配置的内网 DocReader（builtin、markitdown、opendataloader）。云端和任意发现的未知引擎仍拒绝使用，接口可用状态与执行策略一致；文件 URL 导入继续保持原有拒绝策略。文档导入的共享格式白名单包含 AnyDoc 支持的 docm、odp、ods、odt、pptm、rtf、xlsm。
+- 2026-10-29 用户进一步授权内部智能体可选择并保存：制定计划（todo_write）、本人历史对话（search_conversations）、搜索/阅读 Wiki（wiki_search、wiki_read_page）、查看/更新 Wiki 问题（wiki_read_issue、wiki_update_issue）、数据分析/数据元信息（data_analysis、data_schema）。保存与运行时均保留已勾选且在允许范围的工具，显式取消勾选也必须保留；Wiki 更新问题仍按可写知识库范围执行，其他 Wiki 页面写入/删除、通用数据库查询、联网、Shell、MCP 和长期记忆不在此次开放范围。
 - 公开问题使用内置智能推理，只提供通用推理工具，无知识库、MCP、浏览器、技能、文件读取或跨会话记忆。
 - 内部引用、附件、旧会话及不确定判断保守进入内部问答。`privacy_locked` 独立持久化且只从 false 变为 true。
 - PostgreSQL advisory lock 持续覆盖后台回答，HTTP 断开不会提前释放；同一会话并发请求返回冲突。云妆暂不允许流式过程中的 steer 注入。

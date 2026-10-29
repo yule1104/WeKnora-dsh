@@ -178,7 +178,7 @@ func enforcePrivateAgentPolicy(agent *types.CustomAgent, tenant uint64) {
 	c.SelectedSkills = nil
 	c.MCPSelectionMode = "none"
 	c.MCPServices = nil
-	c.AllowedTools = privateReadTools()
+	c.AllowedTools = filterPrivateTools(c.AllowedTools)
 	c.WebFetchEnabled = false
 	c.MultiTurnEnabled = true
 	c.SandboxConfigID = ""

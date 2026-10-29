@@ -1335,7 +1335,7 @@ export default {
       promptsConfigDesc: 'Configure system, context, intent, rewrite, and fallback prompts',
       modelConfig: 'Model Config',
       modelConfigDesc: 'Configure chat model, auxiliary models (ReRank), and generation parameters',
-      privatePolicyHint: 'To protect internal data, the system manages the model, knowledge scope, tools, network access, MCP, memory, and attachments. Settings not restricted by policy, such as generation parameters, can be edited and saved.',
+      privatePolicyHint: 'The system manages the internal model, knowledge scope, network access, MCP, long-term memory, and attachments. Enabled tool selections and generation parameters can be edited and saved. History search is limited to your own conversations; updating Wiki issues requires write access to the knowledge base.',
       toolsConfig: 'Tools',
       toolsConfigDesc: 'Configure tools available to the Agent',
       knowledgeConfig: 'Knowledge Base',

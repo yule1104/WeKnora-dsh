@@ -163,6 +163,103 @@ func TestPrivateRouterPreservesSavedSettingsAndEnforcesPrivacy(t *testing.T) {
 	require.Equal(t, 25, saved.Config.MaxIterations)
 }
 
+func TestPrivateRouterPreservesSelectedWikiReadTools(t *testing.T) {
+	r, db, ctx := privateRoutingFixture(t)
+	a, err := r.EnsureAgent(ctx, 42)
+	require.NoError(t, err)
+	a.Config.AllowedTools = []string{tools.ToolWikiSearch, tools.ToolWikiReadPage, tools.ToolWikiWritePage, tools.ToolWebSearch}
+	require.NoError(t, db.Save(a).Error)
+	a, err = r.EnsureAgent(ctx, 42)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{tools.ToolWikiSearch, tools.ToolWikiReadPage}, a.Config.AllowedTools)
+	// The same policy runs on UpdateAgent before the repository write.
+	enforcePrivateAgentPolicy(a, 42)
+	require.NoError(t, db.Save(a).Error)
+	require.NoError(t, db.First(a, "id = ? AND tenant_id = ?", privacy.AgentID, 42).Error)
+	require.ElementsMatch(t, []string{tools.ToolWikiSearch, tools.ToolWikiReadPage}, a.Config.AllowedTools)
+	a.Config.AllowedTools = []string{tools.ToolWikiReadPage}
+	require.NoError(t, db.Save(a).Error)
+	a, err = r.EnsureAgent(ctx, 42)
+	require.NoError(t, err)
+	require.Equal(t, []string{tools.ToolWikiReadPage}, a.Config.AllowedTools)
+}
+
+func TestPrivateAgentPreservesAllRequestedToolSelections(t *testing.T) {
+	selected := []string{tools.ToolTodoWrite, tools.ToolSearchConversations,
+		tools.ToolWikiSearch, tools.ToolWikiReadPage, tools.ToolWikiReadIssue, tools.ToolWikiUpdateIssue,
+		tools.ToolDataAnalysis, tools.ToolDataSchema}
+	a := &types.CustomAgent{Config: types.CustomAgentConfig{AllowedTools: append(append([]string{}, selected...), tools.ToolWikiDeletePage, tools.ToolWikiFlagIssue, tools.ToolWebSearch, tools.ToolDatabaseQuery)}}
+	a.EnsureDefaults()
+	enforcePrivateAgentPolicy(a, 42)
+	require.ElementsMatch(t, selected, a.Config.AllowedTools)
+	// An explicit deselection stays empty, rather than restoring defaults.
+	a.Config.AllowedTools = []string{}
+	enforcePrivateAgentPolicy(a, 42)
+	require.NotNil(t, a.Config.AllowedTools)
+	require.Empty(t, a.Config.AllowedTools)
+}
+
+func TestPrivateInternalEngineOffersRequestedToolsWithScopeChecks(t *testing.T) {
+	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
+	ctx := privacy.WithRoute(context.WithValue(t.Context(), types.TenantIDContextKey, uint64(7)), "s", true)
+	kb := &types.KnowledgeBase{ID: "kb"}
+	kb.IndexingStrategy.WikiEnabled = true
+	for _, writable := range []bool{false, true} {
+		svc := newToolSurfaceService(kb)
+		svc.cfg = &config.Config{}
+		svc.chunkService = &vectorChunkService{}
+		cfg := toolSurfaceConfig(tools.ToolTodoWrite, tools.ToolSearchConversations,
+			tools.ToolWikiSearch, tools.ToolWikiReadPage, tools.ToolWikiReadIssue, tools.ToolWikiUpdateIssue,
+			tools.ToolDataAnalysis, tools.ToolDataSchema, tools.ToolWikiDeletePage, tools.ToolShellExec)
+		if writable {
+			cfg.WritableKBIDs = []string{"kb"}
+		}
+		model := &fakeAgentChatModel{}
+		engine, err := svc.CreateAgentEngine(ctx, cfg, model, nil, nil, "s", "m")
+		require.NoError(t, err)
+		_, err = engine.Execute(ctx, "s", "m", "hello", nil)
+		require.NoError(t, err)
+		for _, name := range []string{tools.ToolTodoWrite, tools.ToolSearchConversations, tools.ToolWikiSearch, tools.ToolWikiReadPage, tools.ToolWikiReadIssue, tools.ToolDataAnalysis, tools.ToolDataSchema} {
+			require.Contains(t, model.lastToolNames, name)
+		}
+		if writable {
+			require.Contains(t, model.lastToolNames, tools.ToolWikiUpdateIssue)
+		} else {
+			require.NotContains(t, model.lastToolNames, tools.ToolWikiUpdateIssue)
+		}
+		for _, name := range []string{tools.ToolWikiDeletePage, tools.ToolShellExec, tools.ToolWebSearch, tools.ToolSearchMemory} {
+			require.NotContains(t, model.lastToolNames, name)
+		}
+	}
+}
+
+func TestPrivateInternalEngineOffersSelectedWikiReadsOnlyInWikiScope(t *testing.T) {
+	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
+	ctx := privacy.WithRoute(context.WithValue(t.Context(), types.TenantIDContextKey, uint64(7)), "s", true)
+	for _, wikiEnabled := range []bool{true, false} {
+		kb := &types.KnowledgeBase{ID: "kb"}
+		kb.IndexingStrategy.WikiEnabled = wikiEnabled
+		svc := newToolSurfaceService(kb)
+		svc.cfg = &config.Config{}
+		cfg := toolSurfaceConfig(tools.ToolWikiSearch, tools.ToolWikiReadPage, tools.ToolWikiWritePage, tools.ToolWebSearch)
+		model := &fakeAgentChatModel{}
+		engine, err := svc.CreateAgentEngine(ctx, cfg, model, nil, nil, "s", "m")
+		require.NoError(t, err)
+		_, err = engine.Execute(ctx, "s", "m", "hello", nil)
+		require.NoError(t, err)
+		for _, name := range []string{tools.ToolWikiSearch, tools.ToolWikiReadPage} {
+			if wikiEnabled {
+				require.Contains(t, model.lastToolNames, name)
+			} else {
+				require.NotContains(t, model.lastToolNames, name)
+			}
+		}
+		for _, name := range []string{tools.ToolWikiWritePage, tools.ToolWebSearch, tools.ToolReadDocument, tools.ToolListDocuments} {
+			require.NotContains(t, model.lastToolNames, name)
+		}
+	}
+}
+
 func TestPrivateInternalEngineDoesNotAutoRegisterExternalTools(t *testing.T) {
 	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
 	ctx := context.WithValue(t.Context(), types.TenantIDContextKey, uint64(7))
@@ -183,9 +280,10 @@ func TestPrivateInternalEngineDoesNotAutoRegisterExternalTools(t *testing.T) {
 	_, err = engine.Execute(ctx, "s", "m", "hello", nil)
 	require.NoError(t, err)
 	require.Contains(t, model.lastToolNames, tools.ToolListDocuments)
+	require.Contains(t, model.lastToolNames, tools.ToolSearchConversations)
 	require.Contains(t, model.lastSystemPrompt, "SMART_BASE_TEMPLATE")
 	require.Contains(t, model.lastSystemPrompt, "不能据此声称是全部患者")
-	for _, name := range []string{tools.ToolShellExec, tools.ToolSearchConversations, tools.ToolWebSearch, tools.ToolWebFetch, "local_browser"} {
+	for _, name := range []string{tools.ToolShellExec, tools.ToolWebSearch, tools.ToolWebFetch, "local_browser"} {
 		require.NotContains(t, model.lastToolNames, name)
 	}
 }
