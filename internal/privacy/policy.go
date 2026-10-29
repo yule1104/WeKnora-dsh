@@ -66,6 +66,22 @@ func CheckModel(ctx context.Context, id string, chat bool, tenantIDs ...uint64) 
 	return fmt.Errorf("private routing blocked unapproved model %s", id)
 }
 
+// External ingestion exceptions are capability-specific. A VLM exception must
+// never authorize text generation, reranking, or speech processing.
+func CheckAuxiliaryModel(ctx context.Context, id, capability string, tenant uint64) error {
+	key := ""
+	switch capability {
+	case "embedding":
+		key = "WEKNORA_PRIVATE_ALLOW_EXTERNAL_EMBEDDING"
+	case "vlm":
+		key = "WEKNORA_PRIVATE_ALLOW_EXTERNAL_VLM"
+	}
+	if key != "" && id != "" && strings.EqualFold(strings.TrimSpace(os.Getenv(key)), "true") {
+		return nil
+	}
+	return CheckModel(ctx, id, false, tenant)
+}
+
 // Malformed, ambiguous and embellished classifier responses are all private.
 func ClassifyPrivate(reply string) bool {
 	dec := json.NewDecoder(strings.NewReader(strings.TrimSpace(reply)))

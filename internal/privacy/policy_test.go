@@ -27,6 +27,35 @@ func TestPrivateModelPolicy(t *testing.T) {
 	}
 }
 
+func TestExternalIngestionExceptionsDoNotAuthorizeTextOrOtherCapabilities(t *testing.T) {
+	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
+	ctx := context.Background()
+	for _, capability := range []string{"embedding", "vlm"} {
+		if CheckAuxiliaryModel(ctx, "external", capability, 42) == nil {
+			t.Fatal("external ingestion must be disabled by default")
+		}
+	}
+	t.Setenv("WEKNORA_PRIVATE_ALLOW_EXTERNAL_EMBEDDING", "true")
+	if err := CheckAuxiliaryModel(ctx, "external", "embedding", 42); err != nil {
+		t.Fatal(err)
+	}
+	if CheckAuxiliaryModel(ctx, "external", "vlm", 42) == nil {
+		t.Fatal("embedding exception leaked to vision")
+	}
+	t.Setenv("WEKNORA_PRIVATE_ALLOW_EXTERNAL_VLM", "true")
+	if err := CheckAuxiliaryModel(ctx, "external", "vlm", 42); err != nil {
+		t.Fatal(err)
+	}
+	for _, capability := range []string{"rerank", "asr", "unknown"} {
+		if CheckAuxiliaryModel(ctx, "external", capability, 42) == nil {
+			t.Fatalf("exception leaked to %s", capability)
+		}
+	}
+	if CheckModel(ctx, "external", true, 42) == nil {
+		t.Fatal("ingestion exception leaked to text generation")
+	}
+}
+
 func TestRouteAuthorizationCannotCrossSession(t *testing.T) {
 	ctx := WithRoute(context.Background(), "one", false)
 	if !Authorized(ctx, "one") || Authorized(ctx, "two") {

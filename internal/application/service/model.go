@@ -593,7 +593,7 @@ func (s *modelService) getModelUsageDetails(
 // GetEmbeddingModel retrieves and initializes an embedding model instance
 // Takes a model ID and returns an Embedder interface implementation
 func (s *modelService) GetEmbeddingModel(ctx context.Context, modelId string) (embedding.Embedder, error) {
-	if err := privacy.CheckModel(ctx, modelId, false, types.MustTenantIDFromContext(ctx)); err != nil {
+	if err := privacy.CheckAuxiliaryModel(ctx, modelId, "embedding", types.MustTenantIDFromContext(ctx)); err != nil {
 		return nil, err
 	}
 	// Get the model details
@@ -626,7 +626,7 @@ func (s *modelService) GetEmbeddingModel(ctx context.Context, modelId string) (e
 // This is used for cross-tenant knowledge base sharing where the embedding model from
 // the source tenant must be used to ensure vector compatibility
 func (s *modelService) GetEmbeddingModelForTenant(ctx context.Context, modelId string, tenantID uint64) (embedding.Embedder, error) {
-	if err := privacy.CheckModel(ctx, modelId, false, types.MustTenantIDFromContext(ctx)); err != nil {
+	if err := privacy.CheckAuxiliaryModel(ctx, modelId, "embedding", types.MustTenantIDFromContext(ctx)); err != nil {
 		return nil, err
 	}
 	// Check if model ID is empty
@@ -708,6 +708,12 @@ func (s *modelService) GetRerankModel(ctx context.Context, modelId string) (rera
 // GetChatModel retrieves and initializes a chat model instance
 // Takes a model ID and returns a Chat interface implementation
 func (s *modelService) GetChatModel(ctx context.Context, modelId string) (chat.Chat, error) {
+	tenantID := types.MustTenantIDFromContext(ctx)
+	// Ingestion workers have no public conversation route. Their legacy KB
+	// summary/wiki/question model settings must resolve to the private model.
+	if privacy.Enabled() && !privacy.Public(ctx) {
+		modelId = privacy.ModelID(tenantID)
+	}
 	if err := privacy.CheckModel(ctx, modelId, true, types.MustTenantIDFromContext(ctx)); err != nil {
 		return nil, err
 	}
@@ -717,23 +723,8 @@ func (s *modelService) GetChatModel(ctx context.Context, modelId string) (chat.C
 		return nil, errors.New("model ID cannot be empty")
 	}
 
-	tenantID := types.MustTenantIDFromContext(ctx)
-
-	// Get the model directly from repository to avoid status checks
-	model, err := s.repo.GetByID(ctx, tenantID, modelId)
-	if err != nil {
-		logger.ErrorWithFields(ctx, err, map[string]interface{}{
-			"model_id":  modelId,
-			"tenant_id": tenantID,
-		})
-		return nil, err
-	}
-
-	if model == nil {
-		logger.Error(ctx, "Chat model not found")
-		return nil, ErrModelNotFound
-	}
-
+	var model *types.Model
+	var err error
 	if privacy.Enabled() && (modelId == privacy.ModelID(tenantID) || modelId == privacy.TemplateModelID()) {
 		trusted, loadErr := s.repo.GetByID(ctx, privacy.TemplateTenantID(), privacy.TemplateModelID())
 		if loadErr != nil || trusted == nil || trusted.Type != types.ModelTypeKnowledgeQA || trusted.Status != types.ModelStatusActive {
@@ -744,6 +735,14 @@ func (s *modelService) GetChatModel(ctx context.Context, modelId string) (chat.C
 		copy.ID = modelId
 		copy.TenantID = tenantID
 		model = &copy
+	} else {
+		model, err = s.repo.GetByID(ctx, tenantID, modelId)
+		if err != nil {
+			return nil, err
+		}
+		if model == nil {
+			return nil, ErrModelNotFound
+		}
 	}
 	logger.Infof(ctx, "Getting chat model: %s, source: %s", model.Name, model.Source)
 
@@ -763,7 +762,7 @@ func (s *modelService) GetChatModel(ctx context.Context, modelId string) (chat.C
 
 // GetVLMModel retrieves and initializes a vision language model instance.
 func (s *modelService) GetVLMModel(ctx context.Context, modelId string) (vlm.VLM, error) {
-	if err := privacy.CheckModel(ctx, modelId, false, types.MustTenantIDFromContext(ctx)); err != nil {
+	if err := privacy.CheckAuxiliaryModel(ctx, modelId, "vlm", types.MustTenantIDFromContext(ctx)); err != nil {
 		return nil, err
 	}
 	if modelId == "" {

@@ -41,7 +41,7 @@ func TestPrivateRuntimeIgnoresTamperedTenantEndpoint(t *testing.T) {
 		return &types.Model{ID: id, Name: "gpt-4o", Type: types.ModelTypeKnowledgeQA, Source: types.ModelSourceRemote, Status: types.ModelStatusActive, Parameters: types.ModelParameters{BaseURL: endpoint, APIKey: "test", Provider: "openai"}}
 	}
 	id := privacy.ModelID(42)
-	svc := &modelService{repo: &privateModelRepo{models: map[string]*types.Model{id: makeModel(id, external.URL+"/v1"), "template": makeModel("template", trusted.URL+"/v1")}}}
+	svc := &modelService{repo: &privateModelRepo{models: map[string]*types.Model{id: makeModel(id, external.URL+"/v1"), "legacy-external-summary": makeModel("legacy-external-summary", external.URL+"/v1"), "template": makeModel("template", trusted.URL+"/v1")}}}
 	ctx := context.WithValue(context.Background(), types.TenantIDContextKey, uint64(42))
 	model, err := svc.GetChatModel(ctx, id)
 	require.NoError(t, err)
@@ -49,6 +49,40 @@ func TestPrivateRuntimeIgnoresTamperedTenantEndpoint(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, trustedCalls)
 	require.Zero(t, externalCalls)
+	// Existing KBs still reference their old external summary model. A worker
+	// without a conversation route must resolve text generation privately.
+	model, err = svc.GetChatModel(ctx, "legacy-external-summary")
+	require.NoError(t, err)
+	_, err = model.Chat(ctx, []chat.Message{{Role: "user", Content: "synthetic ingestion canary"}}, nil)
+	require.NoError(t, err)
+	require.Equal(t, 2, trustedCalls)
+	require.Zero(t, externalCalls)
+	// A server-authorized public turn still uses its configured public model.
+	publicCtx := privacy.WithRoute(ctx, "public-session", false)
+	model, err = svc.GetChatModel(publicCtx, "legacy-external-summary")
+	require.NoError(t, err)
+	_, err = model.Chat(publicCtx, []chat.Message{{Role: "user", Content: "synthetic public question"}}, nil)
+	require.Error(t, err) // the public endpoint deliberately returns 500
+	require.Positive(t, externalCalls)
+	require.Equal(t, 2, trustedCalls)
+}
+
+func TestPrivateExternalVisionOptInIsPurposeScoped(t *testing.T) {
+	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
+	t.Setenv("WEKNORA_PRIVATE_ALLOW_EXTERNAL_VLM", "true")
+	ctx := context.WithValue(context.Background(), types.TenantIDContextKey, uint64(42))
+	svc := &modelService{repo: &privateModelRepo{models: map[string]*types.Model{
+		"vision": {ID: "vision", Name: "gpt-4o", Type: types.ModelTypeVLLM, Source: types.ModelSourceRemote, Status: types.ModelStatusActive, Parameters: types.ModelParameters{BaseURL: "https://example.com/v1", APIKey: "test", Provider: "openai"}},
+	}}}
+	_, err := svc.GetVLMModel(ctx, "vision")
+	require.NoError(t, err)
+	_, err = svc.GetEmbeddingModel(ctx, "vision")
+	require.Error(t, err)
+	_, err = svc.GetRerankModel(ctx, "vision")
+	require.Error(t, err)
+	t.Setenv("WEKNORA_PRIVATE_ALLOW_EXTERNAL_VLM", "false")
+	_, err = svc.GetVLMModel(ctx, "vision")
+	require.Error(t, err)
 }
 
 func TestPrivateDeploymentRejectsReservedModelMutation(t *testing.T) {

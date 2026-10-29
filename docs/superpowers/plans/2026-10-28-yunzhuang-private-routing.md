@@ -8,6 +8,8 @@
 - `WEKNORA_PRIVATE_CHAT_MODEL_ID` 指向管理员指定的可信模板，`WEKNORA_PRIVATE_CHAT_MODEL_TENANT_ID` 指定模板所属空间（默认 10000）。
 - 每个空间自动复制内部模型及“云妆内部问答”；模型参数运行时始终从可信模板读取，不信任可编辑副本。云妆后端拒绝修改受管理模型。
 - `WEKNORA_PRIVATE_AUX_MODEL_IDS` 为显式批准的辅助模型 ID 列表，默认空。空列表阻止云端 Embedding、Rerank、VLM、ASR。已有关键词索引允许降级检索；新增向量索引需私域 Embedding。
+- 2026-10-29 用户授权暂用现有外部 Embedding 和图片识别：独立设置 `WEKNORA_PRIVATE_ALLOW_EXTERNAL_EMBEDDING=true`、`WEKNORA_PRIVATE_ALLOW_EXTERNAL_VLM=true`。例外只用于各自能力，不放开文本生成、Rerank 或 ASR；未来接入私域替代模型后关闭。入库摘要、问题生成、Wiki 等非公开对话文本调用强制解析到可信内部模型，不再受知识库遗留外部摘要模型配置影响。此临时例外意味着文档切片及图片会发送给相应外部服务，不能称整条入库链路不出私域。
+- 发布后端必须保留原版本的解析能力：先执行 `scripts/build-anydoc-lib.sh` 构建匹配源码的静态库，再以 `-tags anydoc` 构建 Go 二进制（标准 Dockerfile 默认 `WITH_ANYDOC=1`）。发布候选与原后端分别读取 `/api/v1/system/parser-engines`，候选不得丢失原先可用的引擎及其格式，并用合成 Markdown、Office 与图片文件执行完整上传入库验收。
 - 公开问题使用内置智能推理，只提供通用推理工具，无知识库、MCP、浏览器、技能、文件读取或跨会话记忆。
 - 内部引用、附件、旧会话及不确定判断保守进入内部问答。`privacy_locked` 独立持久化且只从 false 变为 true。
 - PostgreSQL advisory lock 持续覆盖后台回答，HTTP 断开不会提前释放；同一会话并发请求返回冲突。云妆暂不允许流式过程中的 steer 注入。
