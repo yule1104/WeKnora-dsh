@@ -3,8 +3,8 @@ package docparser
 import (
 	"context"
 	"fmt"
-	"github.com/Tencent/WeKnora/internal/privacy"
 
+	"github.com/Tencent/WeKnora/internal/privacy"
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/Tencent/WeKnora/internal/types/interfaces"
 )
@@ -74,7 +74,9 @@ func NewReader(
 		if !isURL && IsSimpleFormat(fileType) {
 			return &SimpleFormatReader{}, nil
 		}
-		return nil, fmt.Errorf("private routing requires an approved local parser for %s", fileType)
+		if isURL || !privateLocalParser(engine) {
+			return nil, fmt.Errorf("private routing requires an approved local parser for %s", fileType)
+		}
 	}
 	if registration, ok := lookupEngine(engine); ok {
 		return registration.NewReader(ctx, deps)
@@ -83,6 +85,17 @@ func NewReader(
 		return &SimpleFormatReader{}, nil
 	}
 	return remoteReader(deps)
+}
+
+// These readers run in-process or through the deployment's server-configured
+// internal DocReader connection. Arbitrary/cloud parser names stay blocked.
+func privateLocalParser(engine string) bool {
+	switch engine {
+	case "", BuiltinEngineName, SimpleEngineName, AnydocEngineName, "markitdown", "opendataloader":
+		return true
+	default:
+		return false
+	}
 }
 
 // remoteReader returns the docreader client, or an error when the service is
@@ -132,6 +145,9 @@ func ListAllEngines(
 		}
 
 		available, reason := e.CheckAvailable(docreaderConnected, overrides)
+		if privacy.Enabled() && !privateLocalParser(name) {
+			available, reason = false, "Private routing requires an approved local parser"
+		}
 		result = append(result, types.ParserEngineInfo{
 			Name:              name,
 			Description:       description,
@@ -144,6 +160,10 @@ func ListAllEngines(
 	for _, re := range remoteEngines {
 		if seen[re.Name] {
 			continue
+		}
+		if privacy.Enabled() && !privateLocalParser(re.Name) {
+			re.Available = false
+			re.UnavailableReason = "Private routing requires an approved local parser"
 		}
 		result = append(result, re)
 	}

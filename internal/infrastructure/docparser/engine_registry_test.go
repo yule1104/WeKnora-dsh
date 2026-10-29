@@ -1,11 +1,56 @@
 package docparser
 
 import (
+	"context"
+	"strings"
 	"testing"
 
 	"github.com/Tencent/WeKnora/internal/infrastructure/docparser/anydoc"
 	"github.com/Tencent/WeKnora/internal/types"
 )
+
+func TestPrivateDeploymentKeepsLocalDocumentReaders(t *testing.T) {
+	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
+	remote := &SimpleFormatReader{}
+	for _, engine := range []string{"", "builtin", "markitdown", "opendataloader"} {
+		reader, err := NewReader(context.Background(), engine, "pdf", false, ReaderDeps{Remote: remote})
+		if err != nil || reader != remote {
+			t.Errorf("local engine %q rejected: %v", engine, err)
+		}
+	}
+	reader, err := NewReader(context.Background(), "anydoc", "odt", false, ReaderDeps{})
+	if anydoc.Available() {
+		if err != nil || reader == nil {
+			t.Fatalf("linked local AnyDoc rejected: %v", err)
+		}
+	} else if err == nil || strings.Contains(err.Error(), "approved local parser") {
+		t.Fatalf("AnyDoc must reach its build-availability check: %v", err)
+	}
+	for _, engine := range []string{"mineru_cloud", "weknoracloud", "arbitrary-remote"} {
+		if _, err := NewReader(context.Background(), engine, "pdf", false, ReaderDeps{Remote: remote}); err == nil {
+			t.Errorf("unapproved cloud engine %q allowed", engine)
+		}
+	}
+	if _, err := NewReader(context.Background(), "builtin", "pdf", true, ReaderDeps{Remote: remote}); err == nil {
+		t.Fatal("URL import bypassed private parser policy")
+	}
+}
+
+func TestPrivateEngineListMatchesExecutionPolicy(t *testing.T) {
+	t.Setenv("WEKNORA_PRIVATE_ROUTING_ENABLED", "true")
+	engines := ListAllEngines(true, nil, []types.ParserEngineInfo{
+		{Name: "markitdown", Available: true, FileTypes: []string{"pdf"}},
+		{Name: "arbitrary-remote", Available: true, FileTypes: []string{"pdf"}},
+	})
+	for _, engine := range engines {
+		if engine.Name == "markitdown" && !engine.Available {
+			t.Fatal("internal DocReader engine hidden")
+		}
+		if engine.Name == "arbitrary-remote" && engine.Available {
+			t.Fatal("unapproved reader advertised as available")
+		}
+	}
+}
 
 func TestListAllEnginesBuiltinIncludesDocumentFormats(t *testing.T) {
 	engines := ListAllEngines(true, nil, nil)
