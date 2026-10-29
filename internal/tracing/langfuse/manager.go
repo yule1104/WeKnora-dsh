@@ -70,11 +70,18 @@ func Init(cfg Config) (*Manager, error) {
 		var sp sdktrace.SpanProcessor
 		if cfg.testExporter != nil {
 			// Test mode: synchronous export on span End (deterministic).
-			sp = sdktrace.NewSimpleSpanProcessor(cfg.testExporter)
+			exp := cfg.testExporter
+			if cfg.MetadataOnly {
+				exp = &privateMetadataExporter{inner: exp}
+			}
+			sp = sdktrace.NewSimpleSpanProcessor(exp)
 		} else {
 			exp, err := newExporter(context.Background(), cfg)
 			if err != nil {
 				return nil, err
+			}
+			if cfg.MetadataOnly {
+				exp = &privateMetadataExporter{inner: exp}
 			}
 			sp = sdktrace.NewBatchSpanProcessor(exp,
 				sdktrace.WithBatchTimeout(cfg.FlushInterval),
@@ -82,10 +89,14 @@ func Init(cfg Config) (*Manager, error) {
 				sdktrace.WithMaxQueueSize(cfg.QueueSize),
 			)
 		}
+		sampler := sdktrace.ParentBased(sdktrace.TraceIDRatioBased(cfg.SampleRate))
+		if cfg.MetadataOnly {
+			sampler = sdktrace.AlwaysSample()
+		}
 		m.tp = sdktrace.NewTracerProvider(
 			sdktrace.WithResource(res),
 			sdktrace.WithSpanProcessor(sp),
-			sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.TraceIDRatioBased(cfg.SampleRate))),
+			sdktrace.WithSampler(sampler),
 		)
 		m.tracer = m.tp.Tracer(langfuseScopeName,
 			trace.WithInstrumentationVersion(langfuseScopeVersion),

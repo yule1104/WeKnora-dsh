@@ -32,7 +32,9 @@ func GinMiddleware() gin.HandlerFunc {
 		// agent-chat call it triggers land under the same trace in LiteFuse.
 		// When no traceparent is present (human UI calls, other clients) the
 		// root span starts a fresh trace as before.
-		ctx = propagator.Extract(ctx, propagation.HeaderCarrier(c.Request.Header))
+		if !mgr.cfg.MetadataOnly {
+			ctx = propagator.Extract(ctx, propagation.HeaderCarrier(c.Request.Header))
+		}
 		userID := extractUserID(ctx)
 		sessionID := extractSessionID(c)
 

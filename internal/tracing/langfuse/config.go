@@ -27,6 +27,8 @@ import (
 // Host / PublicKey / SecretKey — which matches every other Langfuse SDK and
 // keeps WeKnora's YAML config free of secrets.
 type Config struct {
+	MetadataOnly       bool
+	PrivateTrustedHost string
 	// Enabled is the master switch. If false the entire package is a no-op.
 	Enabled bool
 	// Host is the Langfuse base URL, e.g. https://cloud.langfuse.com or
@@ -120,7 +122,12 @@ func LoadConfigFromEnv() Config {
 	}
 
 	if privacy.Enabled() {
-		cfg.Enabled = false
+		cfg.MetadataOnly = parseBool(os.Getenv("WEKNORA_PRIVATE_LANGFUSE_METADATA_ONLY"))
+		cfg.PrivateTrustedHost = strings.TrimRight(strings.TrimSpace(os.Getenv("WEKNORA_PRIVATE_LANGFUSE_TRUSTED_HOST")), "/")
+		cfg.Enabled = cfg.Enabled && cfg.MetadataOnly
+		if cfg.MetadataOnly {
+			cfg.SampleRate = 1.0
+		}
 	}
 	return cfg
 }
@@ -132,6 +139,9 @@ func (c Config) Validate() error {
 	}
 	if strings.TrimSpace(c.Host) == "" {
 		return fmt.Errorf("langfuse: host is required when enabled")
+	}
+	if c.MetadataOnly && (c.PrivateTrustedHost == "" || strings.TrimRight(c.Host, "/") != c.PrivateTrustedHost) {
+		return fmt.Errorf("langfuse: private tracing requires the explicitly trusted host")
 	}
 	if c.PublicKey == "" || c.SecretKey == "" {
 		return fmt.Errorf("langfuse: public_key and secret_key are required when enabled")

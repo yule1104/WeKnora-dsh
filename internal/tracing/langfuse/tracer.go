@@ -91,6 +91,9 @@ func (m *Manager) StartTrace(ctx context.Context, opts TraceOptions) (context.Co
 	if !m.Enabled() {
 		return ctx, &Trace{manager: m}
 	}
+	if m.cfg.MetadataOnly {
+		opts.Metadata = privateAttribution(ctx, nil)
+	}
 	name := opts.Name
 	attrs := []attribute.KeyValue{attribute.String(attrObsType, obsTypeTrace)}
 	if opts.Name != "" {
@@ -273,6 +276,9 @@ func (s *Span) Finish(output interface{}, metadata map[string]interface{}, err e
 func (m *Manager) StartGeneration(ctx context.Context, opts GenerationOptions) (context.Context, *Generation) {
 	if !m.Enabled() {
 		return ctx, &Generation{manager: m, model: opts.Model, name: opts.Name}
+	}
+	if m.cfg.MetadataOnly {
+		opts.Metadata = privateAttribution(ctx, opts.Metadata)
 	}
 	ctx = m.reestablishParentSpan(ctx)
 	var autoTrace *Trace

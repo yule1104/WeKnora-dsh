@@ -60,7 +60,11 @@ func (e *AgentEngine) streamLLMToEventBus(
 	messages = e.modelContext.EncodeMessages(messages)
 	reportModelContextLeaks(ctx, "Agent", e.modelContext, messages)
 	prefixFingerprint := chat.PromptPrefixFingerprint(messages, opts)
-	llmCtx = types.WithLLMCallMetadata(llmCtx, "agent_round", prefixFingerprint)
+	purpose, _ := types.LLMCallMetadataFromContext(ctx)
+	if purpose == "" {
+		purpose = "agent_round"
+	}
+	llmCtx = types.WithLLMCallMetadata(llmCtx, purpose, prefixFingerprint)
 	// ChatStream may wait for connection setup and response headers before
 	// returning a channel. Count that silence toward the same idle budget.
 	stallTimeout := e.getLLMStallTimeout()

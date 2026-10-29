@@ -50,7 +50,7 @@ func (e *AgentEngine) streamFinalAnswerToEventBus(
 
 	budget := e.clampCompletionBudgetToContext(e.tokenEstimator.EstimateMessages(messages))
 	llmResult, err := e.streamLLMToEventBus(
-		ctx,
+		types.WithLLMCallMetadata(ctx, "agent_final_answer", ""),
 		messages,
 		&chat.ChatOptions{
 			Temperature:         e.config.Temperature,
