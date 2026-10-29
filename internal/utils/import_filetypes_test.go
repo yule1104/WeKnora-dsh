@@ -5,6 +5,14 @@ import (
 	"testing"
 )
 
+func TestImportAcceptsOfficeFormatsAdvertisedByAnyDoc(t *testing.T) {
+	for _, ext := range []string{"docm", "odp", "ods", "odt", "pptm", "rtf", "xlsm"} {
+		if !IsSupportedImportExtension(ext) {
+			t.Errorf("parser-supported format %q was rejected by import validation", ext)
+		}
+	}
+}
+
 func TestNormalizeImportExtension(t *testing.T) {
 	tests := []struct {
 		ext  string

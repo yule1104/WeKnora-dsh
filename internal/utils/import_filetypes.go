@@ -12,6 +12,7 @@ import (
 // rejected it (#2447).
 var supportedImportFileExtensions = map[string]struct{}{
 	"pdf": {}, "txt": {}, "docx": {}, "doc": {}, "epub": {},
+	"docm": {}, "odp": {}, "ods": {}, "odt": {}, "pptm": {}, "rtf": {}, "xlsm": {},
 	"html": {}, "htm": {}, "mhtml": {}, "md": {}, "markdown": {},
 	"xmind": {},
 	"png":   {}, "jpg": {}, "jpeg": {}, "gif": {},
