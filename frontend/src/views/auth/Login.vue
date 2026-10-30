@@ -158,7 +158,6 @@
           <div class="form-header">
             <h2 class="form-title">{{ $t('auth.login') }}</h2>
             <p class="form-welcome">{{ $t('auth.subtitle') }}</p>
-            <p v-if="registrationEnabled" class="form-hint">{{ $t('auth.loginHint') }}</p>
           </div>
 
           <div class="form-content">
@@ -177,16 +176,6 @@
               <t-button type="submit" theme="primary" size="large" block :loading="loading" class="submit-button">
                 {{ loading ? $t('auth.loggingIn') : $t('auth.login') }}
               </t-button>
-
-              <div class="register-cta" v-if="registrationEnabled">
-                <div class="register-cta__divider">
-                  <span>{{ $t('auth.firstTime') }}</span>
-                </div>
-                <t-button theme="default" variant="outline" size="large" block class="register-cta__button"
-                  :disabled="loading" @click="toggleMode">
-                  {{ $t('auth.createAccount') }}
-                </t-button>
-              </div>
 
               <div v-if="oidcEnabled" class="oidc-divider">
                 <span>{{ $t('auth.orContinueWith') }}</span>

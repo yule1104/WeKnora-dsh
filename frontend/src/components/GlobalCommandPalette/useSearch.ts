@@ -4,6 +4,8 @@ import { searchMessages, type MessageSearchGroupItem } from '@/api/chat-history'
 import { useOrganizationStore } from '@/stores/organization'
 import { useChatResourcesStore } from '@/stores/chatResources'
 import { useMenuStore } from '@/stores/menu'
+import { useAuthStore } from '@/stores/auth'
+import { canShowDemoAgent } from '@/config/demoNavigation'
 
 export interface CmdkKb {
   id: string
@@ -194,7 +196,9 @@ export function useCmdkSearch(options: {
     if (options.agentsEnabled?.() === false) return []
     const q = query.value.trim().toLowerCase()
     if (!q) return []
+    const auth = useAuthStore()
     return agents.value
+      .filter(a => canShowDemoAgent(a.id, auth.isSystemAdmin, auth.canAccessAllTenants))
       .filter(a => {
         const name = (a.name || '').toLowerCase()
         const desc = (a.description || '').toLowerCase()

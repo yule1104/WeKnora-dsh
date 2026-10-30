@@ -76,6 +76,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { PromptTemplate, PromptTemplatesConfig } from '@/api/system';
 import { useEditorResourcesStore } from '@/stores/editorResources';
+import { brandAgentPromptTemplates } from '@/utils/agentPromptTemplates';
 
 const { t } = useI18n();
 
@@ -103,7 +104,7 @@ const loading = ref(false);
 const resettingDefault = ref(false);
 // 模板配置走 editorResources 共享快照：智能体编辑器打开时已预取，这里直接复用。
 const editorResources = useEditorResourcesStore();
-const templatesConfig = computed<PromptTemplatesConfig | null>(() => editorResources.promptTemplates);
+const templatesConfig = computed<PromptTemplatesConfig | null>(() => brandAgentPromptTemplates(editorResources.promptTemplates));
 
 const handleVisibleChange = async (visible: boolean) => {
   popupVisible.value = visible;

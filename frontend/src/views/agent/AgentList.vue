@@ -765,6 +765,7 @@ import ResourceSortControl from '@/components/ResourceSortControl.vue'
 import ResourceOriginBadge from '@/components/ResourceOriginBadge.vue'
 import { shouldShowResourceOriginBadge } from '@/utils/card-list-badge'
 import { useAuthStore } from '@/stores/auth'
+import { canShowDemoAgent } from '@/config/demoNavigation'
 import { useListUrlState } from '@/composables/useListUrlState'
 import { useResourcePins } from '@/composables/useResourcePins'
 import { integrationSectionKey } from '@/config/settingsRoute'
@@ -1176,8 +1177,8 @@ watch(spaceSelection, (val) => {
   spaceAgentsLoading.value = true
   listOrganizationSharedAgents(val).then((res) => {
     if (res.success && res.data) {
-      spaceAgentsList.value = res.data
-      spaceAgentCountByOrg.value = { ...spaceAgentCountByOrg.value, [val]: res.data.length }
+      spaceAgentsList.value = res.data.filter((shared) => canShowDemoAgent(shared.agent?.id || '', authStore.isSystemAdmin, authStore.canAccessAllTenants))
+      spaceAgentCountByOrg.value = { ...spaceAgentCountByOrg.value, [val]: spaceAgentsList.value.length }
     } else {
       spaceAgentsList.value = []
     }

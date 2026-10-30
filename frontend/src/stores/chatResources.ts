@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
+import { canShowDemoAgent } from '@/config/demoNavigation'
 import { ref, computed, watch } from 'vue'
 import { listKnowledgeBases, getKnowledgeBaseById } from '@/api/knowledge-base'
 import { listAgents, type CustomAgent } from '@/api/agent'
@@ -32,6 +34,11 @@ function isKbModelReady(kb: any): boolean {
 export const useChatResourcesStore = defineStore('chatResources', () => {
   const rawKnowledgeBases = ref<any[]>([])
   const agents = ref<CustomAgent[]>([])
+  const filterVisibleAgents = (items: CustomAgent[]) => {
+    const auth = useAuthStore()
+    return items.filter((agent) => canShowDemoAgent(agent.id, auth.isSystemAdmin, auth.canAccessAllTenants))
+  }
+  const visibleAgents = computed(() => filterVisibleAgents(agents.value))
   const disabledOwnAgentIds = ref<string[]>([])
   const allModels = ref<ModelConfig[]>([])
   const webSearchProviders = ref<WebSearchProviderEntity[]>([])
@@ -203,11 +210,11 @@ export const useChatResourcesStore = defineStore('chatResources', () => {
         orgStore.fetchSharedAgents({ force }),
       ])
       const res = agentsRes as { data?: CustomAgent[]; disabled_own_agent_ids?: string[] }
-      return { data: res.data || [], disabled_own_agent_ids: res.disabled_own_agent_ids || [] }
+      return { data: filterVisibleAgents(res.data || []), disabled_own_agent_ids: res.disabled_own_agent_ids || [] }
     }
 
     await ensureAgents(force)
-    return { data: agents.value, disabled_own_agent_ids: disabledOwnAgentIds.value }
+    return { data: visibleAgents.value, disabled_own_agent_ids: disabledOwnAgentIds.value }
   }
 
   async function ensureAgents(force = false): Promise<void> {
@@ -304,7 +311,7 @@ export const useChatResourcesStore = defineStore('chatResources', () => {
   return {
     rawKnowledgeBases,
     validKnowledgeBases,
-    agents,
+    agents: visibleAgents,
     disabledOwnAgentIds,
     allModels,
     chatModels,

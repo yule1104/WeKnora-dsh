@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
+import { canShowDemoAgent } from '@/config/demoNavigation'
 import { ref, computed, watch } from 'vue'
 import type {
   Organization,
@@ -60,6 +62,10 @@ export const useOrganizationStore = defineStore('organization', () => {
   const currentMembers = ref<OrganizationMember[]>([])
   const sharedKnowledgeBases = ref<SharedKnowledgeBase[]>([])
   const sharedAgents = ref<SharedAgentInfo[]>([])
+  const visibleSharedAgents = computed(() => {
+    const auth = useAuthStore()
+    return sharedAgents.value.filter((shared) => canShowDemoAgent(shared.agent?.id || '', auth.isSystemAdmin, auth.canAccessAllTenants))
+  })
   const searchableOrganizations = ref<SearchableOrganizationItem[]>([])
   const previewData = ref<OrganizationPreview | null>(null)
   const loading = ref(false)
@@ -504,7 +510,7 @@ export const useOrganizationStore = defineStore('organization', () => {
         locale,
       )
     await sharedAgentsRequest.fetch(mustForce)
-    return sharedAgents.value
+    return visibleSharedAgents.value
   }
 
   interface InvalidateOrganizationDataOptions {
@@ -802,7 +808,7 @@ export const useOrganizationStore = defineStore('organization', () => {
     currentOrganization,
     currentMembers,
     sharedKnowledgeBases,
-    sharedAgents,
+    sharedAgents: visibleSharedAgents,
     searchableOrganizations,
     resourceCounts,
     previewData,

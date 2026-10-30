@@ -206,7 +206,7 @@ const {
   clearResults,
 } = useCmdkSearch({
   lockedKbIds: () => (activeKbScope.value ? [activeKbScope.value.id] : []),
-  agentsEnabled: () => isDemoAdmin.value && deploymentCapabilities.isSupported('agents'),
+  agentsEnabled: () => deploymentCapabilities.isSupported('agents'),
 })
 
 const drawerVisible = ref(false)
@@ -264,11 +264,11 @@ const allCommands = computed(() => {
     close: () => commandPaletteStore.closePalette(),
   })
   return cmds.filter((command) => {
-    if (!isDemoAdmin.value) {
-      return command.id === 'new-chat' || command.id === 'open-kb-list'
-    }
     if (command.id === 'open-agents') {
       return deploymentCapabilities.isSupported('agents')
+    }
+    if (!isDemoAdmin.value) {
+      return command.id === 'new-chat' || command.id === 'open-kb-list'
     }
     if (command.id === 'open-organizations') {
       return authStore.hasRole('admin') && deploymentCapabilities.isSupported('organizations')

@@ -198,6 +198,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
 import { useUIStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
+import { canShowDemoSettingsSection } from '@/config/demoNavigation'
 import { useDeploymentCapabilitiesStore } from '@/stores/deploymentCapabilities'
 import { useI18n } from 'vue-i18n'
 import { MessagePlugin } from 'tdesign-vue-next'
@@ -299,7 +300,10 @@ type NavGroup = {
 const SYSTEM_ADMIN_SECTIONS = SYSTEM_ADMIN_SETTINGS_SECTIONS
 
 const normalizeSettingsSection = (section: string) => {
-  return normalizeSettingsSectionFromQuery(section, route.query.tab as string | undefined)
+  const normalized = normalizeSettingsSectionFromQuery(section, route.query.tab as string | undefined)
+  return canShowDemoSettingsSection(normalized, authStore.isSystemAdmin, authStore.canAccessAllTenants)
+    ? normalized
+    : 'tenant'
 }
 
 const syncSettingsRoute = (sectionKey: string) => {
@@ -325,6 +329,7 @@ const isSectionSupported = (key: string): boolean => {
 }
 
 const canSeeSection = (key: string): boolean => {
+  if (!canShowDemoSettingsSection(key, authStore.isSystemAdmin, authStore.canAccessAllTenants)) return false
   if (isIntegrationSection(key)) {
     const min = INTEGRATION_TAB_MIN_ROLE[integrationTabFromSection(key)]
     if (!min) return true
@@ -545,10 +550,7 @@ watch(
       syncSettingsRoute(currentSection.value || 'general')
       return
     }
-    const normalizedSection = normalizeSettingsSectionFromQuery(
-      section,
-      typeof route.query.tab === 'string' ? route.query.tab : undefined,
-    )
+    const normalizedSection = normalizeSettingsSection(section)
     if (capabilitiesLoaded && !isSectionSupported(normalizedSection)) {
       MessagePlugin.warning(t('settings.capabilityUnavailable'))
       const fallback = navItems.value[0]?.key || 'general'
