@@ -40,7 +40,7 @@
           </div>
 
           <!-- 集成渠道状态（编辑模式，配置在集成中心） -->
-          <div v-if="editorMode === 'edit' && editorAgent?.id" class="setting-row">
+          <div v-if="isDemoAdmin && editorMode === 'edit' && editorAgent?.id" class="setting-row">
             <div class="setting-info">
               <label>{{ $t('integrations.agentEditor.label') }}</label>
               <p class="desc">{{ isPostCreateSession ? $t('agent.editor.postCreateHint.integrationDesc') : $t('integrations.agentEditor.desc') }}</p>
@@ -797,7 +797,7 @@
                   </span>
                 </t-option>
               </t-select>
-              <a href="javascript:void(0)" class="go-settings-link"
+              <a v-if="isDemoAdmin" href="javascript:void(0)" class="go-settings-link"
                 @click.prevent="uiStore.openSettings('storage')">
                 {{ $t('agentEditor.imageUpload.goStorageSettings') }}
               </a>
@@ -1322,7 +1322,7 @@
                 </t-option>
               </t-select>
               <p v-if="selectedSandboxSummary" class="sandbox-selected-meta">{{ selectedSandboxSummary }}</p>
-              <div class="sandbox-select-links">
+              <div v-if="isDemoAdmin" class="sandbox-select-links">
                 <a href="javascript:void(0)" class="go-settings-link"
                   @click.prevent="uiStore.openSettings('sandbox')">
                   {{ $t('agent.editor.goSandboxSettings') }}
@@ -1361,7 +1361,7 @@
               <p v-else-if="hasSandboxSelected && skillCatalog.length === 0" class="desc empty-hint">
                 <span>{{ $t('agent.editor.noSkillsAvailable') }}</span>
                 <a
-                  v-if="canInstallSkills"
+                  v-if="isDemoAdmin && canInstallSkills"
                   href="javascript:void(0)"
                   class="go-settings-link"
                   @click.prevent="openSkillSettings"
@@ -1858,7 +1858,7 @@ import {
 } from '@/config/contextualGuides';
 import { useI18n } from 'vue-i18n';
 import { selectInitialModelId } from '@/utils/modelDefaults';
-import { hydrateAgentPromptRefs, serializeAgentPrompts } from '@/utils/agentPromptTemplates';
+import { brandAgentPromptTemplates, hydrateAgentPromptRefs, serializeAgentPrompts } from '@/utils/agentPromptTemplates';
 import { copyWithToast } from '@/utils/clipboard';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { useModalShell } from '@/composables/useModalShell'
@@ -1891,6 +1891,7 @@ import {
 } from '@/api/system';
 import { useUIStore } from '@/stores/ui';
 import { useAuthStore } from '@/stores/auth';
+import { isDemoAdministrator } from '@/config/demoNavigation';
 import { useOrganizationStore } from '@/stores/organization';
 import { useChatResourcesStore } from '@/stores/chatResources';
 import { useDeploymentCapabilitiesStore } from '@/stores/deploymentCapabilities';
@@ -1942,6 +1943,9 @@ const CHAT_PARSER_EXTENSIONS = [
 
 const uiStore = useUIStore();
 const authStore = useAuthStore();
+const isDemoAdmin = computed(() =>
+  isDemoAdministrator(authStore.isSystemAdmin, authStore.canAccessAllTenants),
+);
 const deploymentCapabilities = useDeploymentCapabilitiesStore();
 const router = useRouter();
 const orgStore = useOrganizationStore();
@@ -3140,6 +3144,7 @@ const agentIMChannelCount = ref(0);
 const agentEmbedChannelCount = ref(0);
 
 async function loadAgentIntegrationCounts(agentId: string) {
+  if (!isDemoAdmin.value) return;
   try {
     const [imResp, embedResp] = await Promise.all([
       listIMChannels(agentId),
@@ -3154,6 +3159,7 @@ async function loadAgentIntegrationCounts(agentId: string) {
 }
 
 function gotoIntegrations(tab: 'im' | 'embed') {
+  if (!isDemoAdmin.value) return;
   const agentId = editorAgent.value?.id;
   if (!agentId) return;
   handleClose();
@@ -4053,7 +4059,9 @@ const mapKbToOption = (kb: any, shared: boolean, orgName?: string) => {
 };
 
 const applyPromptTemplateDefaults = (cfg: PromptTemplatesConfig | null) => {
+  // Serialize against the raw backend templates so branded text stays custom.
   promptTemplates.value = cfg;
+  cfg = brandAgentPromptTemplates(cfg);
   if (!cfg) return;
   if (cfg.agent_system_prompt && Array.isArray(cfg.agent_system_prompt)) {
     agentSystemPromptTemplates.value = cfg.agent_system_prompt;

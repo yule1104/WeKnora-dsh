@@ -69,7 +69,7 @@ export const useMenuStore = defineStore('menuStore', () => {
 
   const liteHiddenPaths = new Set(['logout'])
 
-  // Demo 向普通用户展示共享空间入口；页面内操作及后端 RBAC 仍沿用原有权限。
+  // 云妆侧栏入口由 demoNavigation 统一控制；页面内操作及后端权限沿用原有规则。
   const visibleMenuArr = computed(() => {
     const authStore = useAuthStore()
     const deploymentCapabilities = useDeploymentCapabilitiesStore()

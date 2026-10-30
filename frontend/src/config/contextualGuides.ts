@@ -1,9 +1,13 @@
 import type { SpotlightGuideStep } from '@/types/spotlightGuide'
 
+// 云妆部署关闭所有产品引导，不依赖浏览器本地完成记录。
+export const USER_GUIDES_ENABLED = false
+
 export const GLOBAL_USER_GUIDE_KEY = 'weknora:new-user-guide-done:v1'
 export const OPEN_NEW_USER_GUIDE_EVENT = 'weknora:open-new-user-guide'
 
 export function openNewUserGuide() {
+  if (!USER_GUIDES_ENABLED) return
   window.dispatchEvent(new CustomEvent(OPEN_NEW_USER_GUIDE_EVENT))
 }
 
@@ -135,6 +139,7 @@ export const CONTEXTUAL_GUIDE_TOURS: Record<ContextualGuideTourId, ContextualGui
 }
 
 export function isContextualGuideDone(tourId: ContextualGuideTourId): boolean {
+  if (!USER_GUIDES_ENABLED) return true
   return localStorage.getItem(CONTEXTUAL_GUIDE_TOURS[tourId].storageKey) === '1'
 }
 
@@ -147,5 +152,6 @@ export function markContextualGuideDone(tourId: ContextualGuideTourId) {
 }
 
 export function isGlobalUserGuideDone(): boolean {
+  if (!USER_GUIDES_ENABLED) return true
   return localStorage.getItem(GLOBAL_USER_GUIDE_KEY) === '1'
 }

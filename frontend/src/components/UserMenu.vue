@@ -32,7 +32,8 @@
     <Transition name="dropdown">
       <div v-if="menuVisible" class="user-dropdown" @click.stop>
         <!-- 弹出菜单：账号（头像+昵称）／当前空间（名称+权限）；底部侧栏样式不改。 -->
-        <div v-if="userName" class="dropdown-user-header is-clickable" role="button" tabindex="0"
+        <div v-if="userName" class="dropdown-user-header" :class="{ 'is-clickable': isDemoAdmin }"
+          :role="isDemoAdmin ? 'button' : undefined" :tabindex="isDemoAdmin ? 0 : undefined"
           @click="handleQuickNav('userprofile')" @keydown.enter.prevent="handleQuickNav('userprofile')"
           @keydown.space.prevent="handleQuickNav('userprofile')">
           <div class="dropdown-user-avatar">
@@ -42,7 +43,7 @@
           <div class="dropdown-user-meta">
             <div class="dropdown-user-name-row">
               <span class="dropdown-user-name">{{ userName }}</span>
-              <t-tooltip v-if="isDemoAdmin" :content="$t('newUserGuide.reopen')" placement="top">
+              <t-tooltip v-if="USER_GUIDES_ENABLED && isDemoAdmin" :content="$t('newUserGuide.reopen')" placement="top">
                 <button type="button" class="dropdown-guide-btn" :aria-label="$t('newUserGuide.reopen')"
                   @click.stop="reopenGuide">
                   <t-icon name="help-circle" size="14px" />
@@ -72,17 +73,17 @@
           <t-icon v-if="showTenantSwitcher" name="swap" class="dropdown-tenant-panel-trail"
             :title="$t('tenant.switcher.menuLabel')" />
         </div>
-        <div class="menu-divider"></div>
+        <div v-if="isDemoAdmin" class="menu-divider"></div>
         <!-- 账号与空间是头像菜单的核心上下文；基础设施类配置统一收进「全部设置」。 -->
-        <div class="menu-item" @click="handleQuickNav('general')">
+        <div v-if="isDemoAdmin" class="menu-item" @click="handleQuickNav('general')">
           <t-icon name="user" class="menu-icon" />
           <span>{{ $t('general.personalSettings') }}</span>
         </div>
+        <div v-if="!authStore.isLiteMode" class="menu-item" @click="handleQuickNav('tenant')">
+          <t-icon name="user-circle" class="menu-icon" />
+          <span>{{ $t('settings.workspaceSettings') }}</span>
+        </div>
         <template v-if="isDemoAdmin">
-          <div v-if="!authStore.isLiteMode" class="menu-item" @click="handleQuickNav('tenant')">
-            <t-icon name="user-circle" class="menu-icon" />
-            <span>{{ $t('settings.workspaceSettings') }}</span>
-          </div>
           <div v-if="canManageMembers" class="menu-item" @click="handleQuickNav('members')">
             <t-icon name="usergroup" class="menu-icon" />
             <span>{{ $t('tenantMember.title') }}</span>
@@ -205,7 +206,7 @@ import {
 import type { TenantInfo } from '@/api/tenant'
 import { useRoleLabel, useHomeTenant } from '@/composables/useRoleLabel'
 import { getRootZoom, rectToCssPx, cssViewportSize } from '@/utils/zoom'
-import { openNewUserGuide } from '@/config/contextualGuides'
+import { USER_GUIDES_ENABLED, openNewUserGuide } from '@/config/contextualGuides'
 import { SETTINGS_MANAGEMENT_SHORTCUT_MIN_ROLE } from '@/config/settingsAccess'
 import { docsUrl } from '@/utils/docsUrl'
 import { isDemoAdministrator } from '@/config/demoNavigation'
@@ -283,6 +284,7 @@ const toggleMenu = () => {
 
 // 快捷导航到设置的特定部分
 const handleQuickNav = (section: string) => {
+  if (!isDemoAdmin.value && section !== 'tenant') return
   menuVisible.value = false
   uiStore.openSettings()
   router.push({ path: '/platform/settings', query: { section } })

@@ -1,6 +1,6 @@
 import type { Router } from 'vue-router'
 import type { Composer } from 'vue-i18n'
-import { openNewUserGuide } from '@/config/contextualGuides'
+import { USER_GUIDES_ENABLED, openNewUserGuide } from '@/config/contextualGuides'
 
 /**
  * A single command that can be searched and invoked from the palette.
@@ -93,7 +93,7 @@ export function buildCommands(ctx: CommandContext): CmdkCommand[] {
         openNewUserGuide()
       },
     },
-  ]
+  ].filter((command) => USER_GUIDES_ENABLED || command.id !== 'open-product-tour')
 }
 
 /**

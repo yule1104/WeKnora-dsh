@@ -8,6 +8,8 @@ import type { SendMessageOptions } from '@/utils/questionOrigin';
 import { useSettingsStore } from '@/stores/settings';
 import { useBrowserConnectionStore } from '@/stores/browserConnection';
 import { useUIStore } from '@/stores/ui';
+import { useAuthStore } from '@/stores/auth';
+import { isDemoAdministrator, canShowDemoAgent } from '@/config/demoNavigation';
 import BrowserIcon from '@/components/icons/BrowserIcon.vue';
 import { useMenuStore } from '@/stores/menu';
 import { listKnowledgeBases, searchKnowledge, batchQueryKnowledge, listKnowledgeTags } from '@/api/knowledge-base';
@@ -62,6 +64,10 @@ const router = useRouter();
 const settingsStore = useSettingsStore();
 const browserConnection = useBrowserConnectionStore();
 const uiStore = useUIStore();
+const authStore = useAuthStore();
+const isDemoAdmin = computed(() =>
+  isDemoAdministrator(authStore.isSystemAdmin, authStore.canAccessAllTenants),
+);
 const orgStore = useOrganizationStore();
 const menuStore = useMenuStore();
 const chatResources = useChatResourcesStore();
@@ -168,6 +174,15 @@ const selectedAgentId = computed({
   get: () => settingsStore.selectedAgentId || BUILTIN_QUICK_ANSWER_ID,
   set: (val: string) => settingsStore.selectAgent(val)
 });
+watch(
+  [isDemoAdmin, () => settingsStore.selectedAgentId],
+  () => {
+    if (!canShowDemoAgent(settingsStore.selectedAgentId || '', authStore.isSystemAdmin, authStore.canAccessAllTenants)) {
+      settingsStore.selectAgent(BUILTIN_SMART_REASONING_ID)
+    }
+  },
+  { immediate: true },
+);
 const selectedAgent = computed(() => {
   // When a shared-agent source tenant is set, resolve from sharedAgents FIRST.
   // Builtin agents (e.g. builtin-smart-reasoning) use the same constant ID across
@@ -183,10 +198,10 @@ const selectedAgent = computed(() => {
   const mine = agents.value.find(a => a.id === selectedAgentId.value);
   if (mine) return mine;
   return {
-    id: BUILTIN_QUICK_ANSWER_ID,
-    name: t('input.normalMode'),
+    id: isDemoAdmin.value ? BUILTIN_QUICK_ANSWER_ID : BUILTIN_SMART_REASONING_ID,
+    name: t(isDemoAdmin.value ? 'input.normalMode' : 'input.agentMode'),
     is_builtin: true,
-    config: { agent_mode: 'quick-answer' as const }
+    config: { agent_mode: isDemoAdmin.value ? 'quick-answer' as const : 'smart-reasoning' as const }
   } as CustomAgent;
 });
 const selectedSharedAgent = computed(() => {
@@ -1078,6 +1093,7 @@ const handleModelChange = (value: string | number | Array<string | number> | und
     return;
   }
   if (val === '__add_model__') {
+    if (!isDemoAdmin.value) return;
     selectedModelId.value = readLastChatModelID();
     handleGoToConversationModels();
     return;
@@ -2988,7 +3004,7 @@ defineExpose({
             <div class="model-selector-dropdown" :style="modelDropdownStyle" @click.stop>
               <div class="model-selector-header">
                 <span>{{ $t('conversationSettings.models.chatGroupLabel') }}</span>
-                <button class="model-selector-add" type="button" @click="handleModelChange('__add_model__')">
+                <button v-if="isDemoAdmin" class="model-selector-add" type="button" @click="handleModelChange('__add_model__')">
                   <span class="add-icon">+</span>
                   <span class="add-text">{{ $t('input.addModel') }}</span>
                 </button>

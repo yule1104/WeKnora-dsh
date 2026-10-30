@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { hydrateAgentPromptRefs, serializeAgentPrompts } from './agentPromptTemplates'
+import { brandAgentPromptTemplates, hydrateAgentPromptRefs, serializeAgentPrompts } from './agentPromptTemplates'
 import type { CustomAgentConfig } from '../api/agent'
 import type { PromptTemplatesConfig } from '../api/system'
 
@@ -55,4 +55,35 @@ test('custom and legacy text survives unchanged and stale IDs are removed', () =
 test('template refs cannot resolve from another mode or field', () => {
   assert.equal(hydrateAgentPromptRefs({ agent_mode: 'quick-answer', system_prompt_id: 'wiki' }, templates).system_prompt, '')
   assert.equal(hydrateAgentPromptRefs({ agent_mode: 'smart-reasoning', system_prompt_id: 'context' }, templates).system_prompt, '')
+})
+
+const brandedSource: PromptTemplatesConfig = {
+  ...templates,
+  agent_system_prompt: [template('upstream-agent', 'You are WeKnora, an assistant developed by Tencent. Help {{knowledge_bases}}.\nRead .weknora/requirements.json', {name:'WeKnora Agent',default:true,mode:'rag'})],
+}
+
+test('Yunzhuang template presentation removes upstream identity without mutating source templates', () => {
+  const branded = brandAgentPromptTemplates(brandedSource)!
+  assert.equal(branded.agent_system_prompt![0].id, 'upstream-agent')
+  assert.equal(branded.agent_system_prompt![0].content, 'You are 云妆, an assistant. Help {{knowledge_bases}}.\nRead .weknora/requirements.json')
+  assert.equal(branded.agent_system_prompt![0].name, '云妆 Agent')
+  assert.ok(brandedSource.agent_system_prompt![0].content.includes('WeKnora'))
+  assert.equal(brandAgentPromptTemplates(null), null)
+})
+
+test('branded template selection saves actual custom text instead of the upstream template reference', () => {
+  const chosen = brandAgentPromptTemplates(brandedSource)!.agent_system_prompt![0]
+  const config: CustomAgentConfig = { agent_mode: 'smart-reasoning', system_prompt_id: chosen.id, system_prompt: chosen.content }
+  const saved = serializeAgentPrompts(config, brandedSource)
+  assert.equal(saved.system_prompt, chosen.content)
+  assert.equal(saved.system_prompt_id, undefined)
+  assert.equal(hydrateAgentPromptRefs(saved, brandedSource).system_prompt, chosen.content)
+})
+
+test('existing upstream template references and exact template bodies display Yunzhuang while custom text remains untouched', () => {
+  const expected = brandAgentPromptTemplates(brandedSource)!.agent_system_prompt![0].content
+  assert.equal(hydrateAgentPromptRefs({agent_mode:'smart-reasoning', system_prompt_id:'upstream-agent'}, brandedSource).system_prompt, expected)
+  assert.equal(hydrateAgentPromptRefs({agent_mode:'smart-reasoning', system_prompt:brandedSource.agent_system_prompt![0].content}, brandedSource).system_prompt, expected)
+  const custom = 'My own WeKnora integration instructions must stay exactly as entered.'
+  assert.equal(hydrateAgentPromptRefs({agent_mode:'smart-reasoning', system_prompt:custom}, brandedSource).system_prompt, custom)
 })

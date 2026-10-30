@@ -154,6 +154,7 @@
       <p class="section-description">
         {{ $t('tenantMember.sectionDescription') }}
         <a
+          v-if="isDemoAdmin"
           class="doc-link"
           :href="docsUrl('tenantAuth')"
           target="_blank"
@@ -506,6 +507,7 @@ import { MessagePlugin } from 'tdesign-vue-next'
 import SettingDrawer from '@/components/settings/SettingDrawer.vue'
 import { copyWithToast } from '@/utils/clipboard'
 import { useAuthStore } from '@/stores/auth'
+import { isDemoAdministrator } from '@/config/demoNavigation'
 import { AUDIT_ACTION_I18N_ROOTS } from '@/i18n/auditActionRegistry'
 import { auditActionLabel } from '@/i18n/auditActionLabel'
 import {
@@ -532,6 +534,9 @@ import {
 
 const { t, tm, locale } = useI18n()
 const authStore = useAuthStore()
+const isDemoAdmin = computed(() =>
+  isDemoAdministrator(authStore.isSystemAdmin, authStore.canAccessAllTenants),
+)
 
 /** 悬停层限制在视口内，内容由内部滚动 */
 const permissionsPopupInnerStyle = {
