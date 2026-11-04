@@ -14,7 +14,7 @@ import (
 )
 
 const AgentID = "yunzhuang-internal-qa"
-const AgentName = "云妆内部问答"
+const AgentName = "内部知识助手"
 
 type routeKey struct{}
 type route struct {

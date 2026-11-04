@@ -38,9 +38,9 @@ function buildViewModel() {
 Page({
   data: {
     texts: {},
-    knowledgeTitle: "云妆 AI 知识库",
+    knowledgeTitle: "AI 助手 知识库",
     knowledgeSubtitle: "在微信中选择知识库，导入网页或提问。",
-    needsSettingsText: "请先配置云妆 AI API 地址和 API Key，再加载知识库。",
+    needsSettingsText: "请先配置AI 助手 API 地址和 API Key，再加载知识库。",
     openSettingsText: "打开设置",
     knowledgeBaseLabel: "知识库",
     tapToSelectText: "点击选择",

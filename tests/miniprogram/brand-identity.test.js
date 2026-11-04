@@ -4,25 +4,25 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '../..');
 
-test('Chinese and English demo copy consistently presents Yunzhuang AI', () => {
+test('Chinese and English demo copy consistently presents neutral AI Assistant', () => {
   const { MESSAGES } = require('../../miniprogram/utils/i18n');
-  assert.equal(MESSAGES.zh.settingsTitle, '连接云妆 AI');
-  assert.equal(MESSAGES.zh.askAI, '向云妆 AI 提问');
-  assert.equal(MESSAGES.en.askAI, 'Ask Yunzhuang AI');
+  assert.equal(MESSAGES.zh.settingsTitle, '连接 AI 助手');
+  assert.equal(MESSAGES.zh.askAI, '向 AI 助手提问');
+  assert.equal(MESSAGES.en.askAI, 'Ask AI Assistant');
   for (const messages of Object.values(MESSAGES)) {
-    assert.doesNotMatch(JSON.stringify(messages), /weknora|tencent|腾讯/i);
+    assert.doesNotMatch(JSON.stringify(messages), /weknora|tencent|腾讯|云妆|yunzhuang/i);
   }
 });
 
-test('all answer-generating template paths introduce the Yunzhuang identity', () => {
+test('all answer-generating template paths use a neutral assistant identity', () => {
   for (const file of ['system_prompt.yaml', 'intent_prompts.yaml', 'fallback.yaml', 'agent_system_prompt.yaml']) {
     const text = fs.readFileSync(path.join(root, 'config/prompt_templates', file), 'utf8');
     const bodies = [...text.matchAll(/    content: \|\n((?:      .*\n|\n)*)/g)].map(m => m[1]);
     const identities = bodies.filter(body => /You are .*assistant|You are .*云妆|You are .*WeKnora/i.test(body));
     assert.ok(identities.length > 0, file);
     for (const body of identities) {
-      assert.doesNotMatch(body, /You are WeKnora|developed by Tencent/i, file);
-      assert.match(body, /云妆 AI/, file);
+      assert.doesNotMatch(body, /You are WeKnora|developed by Tencent|云妆|Yunzhuang/i, file);
+      assert.match(body, /AI 助手/, file);
       assert.match(body, /product identity/i, file);
     }
   }
@@ -53,4 +53,13 @@ test('renamed settings preserve existing connection details and locale on launch
     global.wx = originalWx;
     global.App = originalApp;
   }
+});
+
+
+test('private route identity and display name are neutral', () => {
+  const policy = fs.readFileSync(path.join(root, 'internal/privacy/policy.go'), 'utf8');
+  const engine = fs.readFileSync(path.join(root, 'internal/application/service/private_agent.go'), 'utf8');
+  assert.match(policy, /const AgentName = "内部知识助手"/);
+  assert.match(engine, /你是 AI 助手/);
+  assert.doesNotMatch(engine, /云妆内部问答助手/);
 });

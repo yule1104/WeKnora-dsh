@@ -187,7 +187,7 @@ test("knowledge page skips API loading until settings are configured", async () 
     await pageDefinitions[0].onShow.call(page);
 
     assert.equal(page.data.needsSettings, true);
-    assert.equal(page.data.knowledgeTitle, "云妆 AI 知识库");
+    assert.equal(page.data.knowledgeTitle, "AI 助手 知识库");
     assert.deepEqual(calls, []);
   } finally {
     global.Page = originalPage;

@@ -18,10 +18,10 @@ function buildViewModel() {
 Page({
   data: {
     chatTitle: "知识问答",
-    chatSubtitle: "向当前选中的云妆 AI 知识库提问。",
+    chatSubtitle: "向当前选中的AI 助手 知识库提问。",
     questionLabel: "问题",
     questionPlaceholder: "输入你的问题…",
-    askText: "向云妆 AI 提问",
+    askText: "向 AI 助手提问",
     answerLabel: "回答",
     answer: "",
     displayAnswer: "",

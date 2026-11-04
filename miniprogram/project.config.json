@@ -1,5 +1,5 @@
 {
-  "description": "Yunzhuang AI Mini Program plugin",
+  "description": "AI Assistant Mini Program plugin",
   "setting": {
     "urlCheck": true,
     "es6": true,
@@ -27,7 +27,7 @@
   },
   "compileType": "miniprogram",
   "libVersion": "latest",
-  "projectname": "Yunzhuang AI Mini Program",
+  "projectname": "AI Assistant Mini Program",
   "condition": {},
   "simulatorPluginLibVersion": {},
   "packOptions": {
