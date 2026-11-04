@@ -1,5 +1,5 @@
 {
-  "description": "WeKnora Mini Program plugin",
+  "description": "Yunzhuang AI Mini Program plugin",
   "setting": {
     "urlCheck": true,
     "es6": true,
@@ -27,7 +27,7 @@
   },
   "compileType": "miniprogram",
   "libVersion": "latest",
-  "projectname": "WeKnora Mini Program",
+  "projectname": "Yunzhuang AI Mini Program",
   "condition": {},
   "simulatorPluginLibVersion": {},
   "packOptions": {

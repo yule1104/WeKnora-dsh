@@ -22,10 +22,10 @@ function buildViewModel(locale, languageIndex) {
 
 Page({
   data: {
-    settingsTitle: "连接 WeKnora",
-    settingsSubtitle: "填写 WeKnora API 地址与租户 API Key。",
+    settingsTitle: "连接云妆 AI",
+    settingsSubtitle: "填写云妆 AI API 地址与租户 API Key。",
     apiBaseUrlLabel: "API 地址",
-    apiBaseUrlPlaceholder: "https://your-weknora.example.com",
+    apiBaseUrlPlaceholder: "https://ai.example.com",
     apiKeyLabel: "API Key",
     apiKeyPlaceholder: "sk-...",
     languageLabel: "界面语言",

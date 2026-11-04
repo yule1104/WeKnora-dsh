@@ -38,15 +38,15 @@ function buildViewModel() {
 Page({
   data: {
     texts: {},
-    knowledgeTitle: "WeKnora 知识库",
+    knowledgeTitle: "云妆 AI 知识库",
     knowledgeSubtitle: "在微信中选择知识库，导入网页或提问。",
-    needsSettingsText: "请先配置 WeKnora API 地址和 API Key，再加载知识库。",
+    needsSettingsText: "请先配置云妆 AI API 地址和 API Key，再加载知识库。",
     openSettingsText: "打开设置",
     knowledgeBaseLabel: "知识库",
     tapToSelectText: "点击选择",
     refreshText: "刷新知识库列表",
     urlLabel: "网页链接",
-    urlPlaceholder: "https://github.com/Tencent/WeKnora",
+    urlPlaceholder: "https://example.com/article",
     importUrlText: "导入链接",
     displayKnowledgeBaseName: "点击选择",
     importing: false,

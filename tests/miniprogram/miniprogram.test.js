@@ -67,13 +67,13 @@ test("getLocale reads stored language preference", () => {
   }
 });
 
-test("API helpers send WeKnora auth headers", async () => {
+test("API helpers send AI auth headers", async () => {
   let capturedRequest;
   global.wx = {
     getStorageSync() {
       return {
         apiKey: "sk-test",
-        baseUrl: "https://weknora.example.com/",
+        baseUrl: "https://ai.example.com/",
         selectedKnowledgeBaseId: "kb-1"
       };
     },
@@ -90,7 +90,7 @@ test("API helpers send WeKnora auth headers", async () => {
 
   await listKnowledgeBases();
 
-  assert.equal(capturedRequest.url, "https://weknora.example.com/api/v1/knowledge-bases");
+  assert.equal(capturedRequest.url, "https://ai.example.com/api/v1/knowledge-bases");
   assert.equal(capturedRequest.header["X-API-Key"], "sk-test");
   assert.match(capturedRequest.header["X-Request-ID"], /^mp-/);
 });
@@ -101,7 +101,7 @@ test("URL import helper posts the selected URL payload", async () => {
     getStorageSync() {
       return {
         apiKey: "sk-test",
-        baseUrl: "https://weknora.example.com",
+        baseUrl: "https://ai.example.com",
         selectedKnowledgeBaseId: "kb-1"
       };
     },
@@ -116,12 +116,12 @@ test("URL import helper posts the selected URL payload", async () => {
     }
   };
 
-  await createKnowledgeFromURL("kb-1", "https://github.com/Tencent/WeKnora", true);
+  await createKnowledgeFromURL("kb-1", "https://example.com/article", true);
 
   assert.equal(capturedRequest.method, "POST");
-  assert.equal(capturedRequest.url, "https://weknora.example.com/api/v1/knowledge-bases/kb-1/knowledge/url");
+  assert.equal(capturedRequest.url, "https://ai.example.com/api/v1/knowledge-bases/kb-1/knowledge/url");
   assert.deepEqual(capturedRequest.data, {
-    url: "https://github.com/Tencent/WeKnora",
+    url: "https://example.com/article",
     enable_multimodel: true
   });
 });
@@ -132,7 +132,7 @@ test("chat helper includes selected knowledge base ids", async () => {
     getStorageSync() {
       return {
         apiKey: "sk-test",
-        baseUrl: "https://weknora.example.com"
+        baseUrl: "https://ai.example.com"
       };
     },
     request(options) {
@@ -147,7 +147,7 @@ test("chat helper includes selected knowledge base ids", async () => {
   await knowledgeChat("session-1", "hello", "kb-1");
 
   assert.equal(capturedRequest.method, "POST");
-  assert.equal(capturedRequest.url, "https://weknora.example.com/api/v1/knowledge-chat/session-1");
+  assert.equal(capturedRequest.url, "https://ai.example.com/api/v1/knowledge-chat/session-1");
   assert.deepEqual(capturedRequest.data, {
     query: "hello",
     knowledge_base_ids: ["kb-1"]
@@ -187,7 +187,7 @@ test("knowledge page skips API loading until settings are configured", async () 
     await pageDefinitions[0].onShow.call(page);
 
     assert.equal(page.data.needsSettings, true);
-    assert.equal(page.data.knowledgeTitle, "WeKnora 知识库");
+    assert.equal(page.data.knowledgeTitle, "云妆 AI 知识库");
     assert.deepEqual(calls, []);
   } finally {
     global.Page = originalPage;
@@ -209,7 +209,7 @@ test("knowledge page maps API results to picker labels", async () => {
       getStorageSync() {
         return {
           apiKey: "sk-test",
-          baseUrl: "https://weknora.example.com",
+          baseUrl: "https://ai.example.com",
           locale: "en"
         };
       },
