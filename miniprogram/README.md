@@ -29,7 +29,9 @@ This directory contains a WeChat Mini Program plugin for AI Assistant. It gives 
 
 - WeChat DevTools may block `localhost` requests when URL validation is enabled. For local testing, either disable domain validation in DevTools or expose AI Assistant through a HTTPS development domain.
 - In production Mini Programs, add the AI Assistant API domain to the Mini Program request domain allowlist.
-- The chat endpoint returns Server-Sent Events. The Mini Program client parses completed SSE text responses and displays accumulated `answer` chunks.
+- The chat endpoint returns Server-Sent Events. The Chat tab is a bubble-style multi-turn conversation that reuses one session until **新对话 / New chat** is tapped.
+- Answers are streamed: `wx.request` is called with `enableChunked: true` and `onChunkReceived` (base library ≥ 2.20.2). `utils/utf8.js` decodes chunks without breaking multi-byte characters, `utils/sse.js` (`createSSEParser`) parses events across chunk boundaries, and only `response_type: "answer"` content is rendered (batched every ~80 ms). On base libraries without chunked transfer the full SSE body is parsed once the request completes.
+- Any reverse proxy in front of the API must not buffer `text/event-stream` responses (e.g. nginx `proxy_buffering off;`), otherwise the answer still arrives all at once.
 
 ## Test
 
